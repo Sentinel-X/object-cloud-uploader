@@ -60,12 +60,12 @@ describe('BlobService — constructor', () => {
 
 // ─── basic bucket operations ─────────────────────────────────────────────────────────────
 describe('aws basic bucket operations', () => {
-    it('creates and delete bucket aws', async () => {
+    it('creates and delete bucket', async () => {
         await awsService.createBucket('random-container');
         await awsService.deleteBucket('random-container');
     });
 
-    it('delete bucket that does not exists on aws', async () => {
+    it('delete bucket that does not exists', async () => {
         await awsService.deleteBucket('this-not-exists');
     });
 
@@ -76,12 +76,12 @@ describe('aws basic bucket operations', () => {
 });
 
 describe('azure basic bucket operations', () => {
-    it('creates and delete bucket aws', async () => {
+    it('creates and delete bucket', async () => {
         await azureService.createBucket('random-container');
         await azureService.deleteBucket('random-container');
     });
 
-    it('delete bucket that does not exists on aws', async () => {
+    it('delete bucket that does not exists', async () => {
         await azureService.deleteBucket('this-not-exists');
     });
 
