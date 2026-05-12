@@ -42,7 +42,6 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^25.6.2",
     "chai": "^6.2.2",
-    "dotenv": "^17.4.2",
     "eslint": "^10.3.0",
     "mocha": "^11.7.5",
     "mocha-junit-reporter": "^2.2.1",
