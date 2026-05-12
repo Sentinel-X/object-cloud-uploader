@@ -164,11 +164,3 @@ export default class BlobStorageService {
         }
     }
 }
-
-export function getAzureService(connectionString?: string) {
-    if (!connectionString && !process.env.AZURE_CONNECTION_STRING) {
-        throw new Error('Missing AZURE_CONNECTION_STRING environment variable');
-    }
-
-    return new BlobStorageService(connectionString || process.env.AZURE_CONNECTION_STRING!);
-}

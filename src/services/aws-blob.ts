@@ -239,35 +239,3 @@ export default class AWSBlobStorageService {
     }
 
 }
-
-export function getAwsService(config?: {
-    accessKeyId: string;
-    secretAccessKey: string;
-    region: string;
-    endpoint?: string;
-}) {
-    if (!config) {
-        if (!process.env.AWS_ACCESS_KEY_ID) {
-            throw new Error('Missing AWS_ACCESS_KEY_ID environment variable');
-        }
-
-        if (!process.env.AWS_SECRET_ACCESS_KEY) {
-            throw new Error('Missing AWS_SECRET_ACCESS_KEY environment variable');
-        }
-
-        if (!process.env.AWS_ENDPOINT) {
-            throw new Error('Missing AWS_ENDPOINT environment variable');
-        }
-
-        if (!process.env.AWS_REGION) {
-            throw new Error('Missing AWS_REGION environment variable');
-        }
-    }
-
-    return new AWSBlobStorageService(config || {
-        region: process.env.AWS_REGION!,
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-        endpoint: process.env.AWS_ENDPOINT!
-    });
-}

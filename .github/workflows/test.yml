@@ -40,8 +40,5 @@ jobs:
       - name: Run s3Ninja
         run: docker run -d -p 9444:9000 scireum/s3-ninja:latest
 
-      - name: Generate .env file
-        run: cp .env.example .env
-
       - name: Run tests
         run: npm run devops_coverage
