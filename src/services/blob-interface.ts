@@ -34,39 +34,9 @@ export type CreateObjectParams =
  * `BlobService` delegates all operations to a concrete implementation of this interface.
  */
 export interface IBlobStorageService {
-    /**
-     * Uploads an object to storage. Accepts either a `fileBuffer` or a `filePath`.
-     * @throws {DetectionAlreadyExists} If the object already exists and `ignoreIfAlreadyExists` is `false`.
-     * @returns The URL of the uploaded object.
-     */
     createObject(params: CreateObjectParams): Promise<string>;
-
-    /**
-     * Creates a bucket (AWS) or container (Azure).
-     * Silently ignores the operation if it already exists.
-     * @param containerName - Name of the bucket or container.
-     * @param isPublic - Whether to allow public read access. Defaults to `false`.
-     */
     createBucket(containerName: string, isPublic?: boolean): Promise<void>;
-
-    /**
-     * Generates a temporary access token for a stored object.
-     * Returns a SAS token for Azure or a pre-signed URL query string for AWS.
-     * @param containerName - Bucket or container where the object is stored.
-     * @param blobName - Key/path of the object in storage.
-     * @param millisecondsDuration - Token validity in milliseconds. Defaults to 5 minutes.
-     */
     generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration?: number): unknown;
-
-    /**
-     * Extracts the container/bucket name and blob/object name from a full storage URL.
-     * @throws {Error} If the URL does not match the configured endpoint (Azure).
-     */
     getBlobName(blobUrl: string): { blobName: string; containerName: string; };
-
-    /**
-     * Deletes a bucket (AWS) or container (Azure) and all its contents.
-     * Silently ignores the operation if it does not exist.
-     */
     deleteBucket(containerName: string): Promise<void>;
 }
