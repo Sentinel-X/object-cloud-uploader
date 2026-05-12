@@ -2,24 +2,25 @@ import { expect } from 'chai';
 import * as path from 'path';
 import * as fs from 'fs';
 import moment from 'moment';
-import BlobService from '../src/blob-service';
+import BlobService, { BlobConfig } from '../src/blob-service';
 import { InvalidCloudType } from '../src/services/exceptions';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 const BLOB_IMAGE_PATH = path.join(__dirname, 'assets', 'blob_image.jpg');
 
-const AWS_CONFIG = {
-    blobStorageType: 'aws' as const,
+const AWS_CONFIG: BlobConfig = {
+    blobStorageType: 'aws',
     accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
     secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
     region: 'us-east-1',
     endpoint: 'http://localhost:9444',
-    containerName: 'blob-service-test-bucket',
 };
 
-const AZURE_CONFIG = {
-    blobStorageType: 'azure' as const,
+const AWS_CONTAINER_NAME = 'blob-service-test-bucket';
+
+const AZURE_CONFIG: BlobConfig = {
+    blobStorageType: 'azure',
     connectionString: 'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;',
 };
 
@@ -36,7 +37,7 @@ before(async () => {
 });
 
 after(async () => {
-    await awsService.deleteBucket(AWS_CONFIG.containerName);
+    await awsService.deleteBucket(AWS_CONTAINER_NAME);
     await awsService.deleteBucket('auto-created-bucket');
     await azureService.deleteBucket(AZURE_CONTAINER);
 });
@@ -62,7 +63,7 @@ describe('BlobService — constructor', () => {
 describe('BlobService.createObject — AWS (s3Ninja)', () => {
     it('uploads successfully and returns a URL', async () => {
         const result = await awsService.createObject({
-            containerName: AWS_CONFIG.containerName,
+            containerName: AWS_CONTAINER_NAME,
             objectName: `test-upload-${Date.now()}.jpg`,
             fileBuffer: imageBuffer,
             contentType: 'image/jpeg',
@@ -85,12 +86,12 @@ describe('BlobService.createObject — AWS (s3Ninja)', () => {
     it('returns existing URL when ignoreIfAlreadyExists is true', async () => {
         const objectName = `ignore-duplicate-${Date.now()}.jpg`;
         await awsService.createObject({
-            containerName: AWS_CONFIG.containerName,
+            containerName: AWS_CONTAINER_NAME,
             objectName,
             fileBuffer: imageBuffer,
         });
         const result = await awsService.createObject({
-            containerName: AWS_CONFIG.containerName,
+            containerName: AWS_CONTAINER_NAME,
             objectName,
             fileBuffer: imageBuffer,
             ignoreIfAlreadyExists: true,
@@ -171,12 +172,12 @@ describe('BlobService.createObject — Azure (Azurite)', () => {
 describe('BlobService.getBlobName — AWS', () => {
     it('extracts containerName and blobName from a valid URL', async () => {
         const url = await awsService.createObject({
-            containerName: AWS_CONFIG.containerName,
+            containerName: AWS_CONTAINER_NAME,
             objectName: `get-blob-name-${Date.now()}.jpg`,
             fileBuffer: imageBuffer,
         });
         const { containerName, blobName } = awsService.getBlobName(url);
-        expect(containerName).to.equal(AWS_CONFIG.containerName);
+        expect(containerName).to.equal(AWS_CONTAINER_NAME);
         expect(blobName).to.be.a('string').and.not.empty;
     });
 });
@@ -211,7 +212,7 @@ describe('BlobService.generateSasTokenForBlob — AWS (s3Ninja)', () => {
 
     before(async () => {
         const url = await awsService.createObject({
-            containerName: AWS_CONFIG.containerName,
+            containerName: AWS_CONTAINER_NAME,
             objectName: `sas-test-${Date.now()}.jpg`,
             fileBuffer: imageBuffer,
         });
