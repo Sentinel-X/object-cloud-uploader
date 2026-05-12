@@ -1,12 +1,12 @@
 import {
     BlobServiceClient,
-    // ContainerSASPermissions,
+    ContainerSASPermissions,
     RestError,
-    // SASProtocol,
-    // StorageSharedKeyCredential,
-    // generateBlobSASQueryParameters
+    SASProtocol,
+    StorageSharedKeyCredential,
+    generateBlobSASQueryParameters
 } from '@azure/storage-blob';
-// import moment from 'moment';
+import moment from 'moment';
 import { DetectionAlreadyExists } from './exceptions';
 
 type CreateObjectParamsBase = {
@@ -115,43 +115,42 @@ export default class BlobStorageService {
         }
     }
 
-    // TODO
-    // public generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()) {
-    //     const containerClient = this.blobServiceClient.getContainerClient(containerName);
-    //     const startsOn = new Date();
+    public generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()) {
+        const containerClient = this.blobServiceClient.getContainerClient(containerName);
+        const startsOn = new Date();
 
-    //     let protocol = SASProtocol.Https;
+        let protocol = SASProtocol.Https;
 
-    //     if (new URL(this.blobEndpoint).protocol === 'http:') {
-    //         protocol = SASProtocol.HttpsAndHttp;
-    //     }
+        if (new URL(this.blobEndpoint).protocol === 'http:') {
+            protocol = SASProtocol.HttpsAndHttp;
+        }
 
-    //     const sasToken = generateBlobSASQueryParameters({
-    //         containerName,
-    //         blobName,
-    //         permissions: ContainerSASPermissions.parse('r'),
-    //         startsOn: startsOn,
-    //         expiresOn: new Date(startsOn.getTime() + millisecondsDuration),
-    //         version: '2024-11-04',
-    //         protocol,
-    //     }, containerClient.credential as StorageSharedKeyCredential);
-    //     return sasToken;
-    // }
+        const sasToken = generateBlobSASQueryParameters({
+            containerName,
+            blobName,
+            permissions: ContainerSASPermissions.parse('r'),
+            startsOn: startsOn,
+            expiresOn: new Date(startsOn.getTime() + millisecondsDuration),
+            version: '2024-11-04',
+            protocol,
+        }, containerClient.credential as StorageSharedKeyCredential);
+        return sasToken;
+    }
 
-    // public getBlobName(blobUrl: string) {
+    public getBlobName(blobUrl: string) {
 
-    //     if (!blobUrl.startsWith(`${this.blobEndpoint}/`)) {
-    //         throw new Error(`"${blobUrl}" is not a valid URL for "${this.blobEndpoint}".`);
-    //     }
+        if (!blobUrl.startsWith(`${this.blobEndpoint}/`)) {
+            throw new Error(`"${blobUrl}" is not a valid URL for "${this.blobEndpoint}".`);
+        }
 
-    //     const pathName = blobUrl.slice(this.blobEndpoint.length + 1);
-    //     const firstSeparator = pathName.indexOf('/');
+        const pathName = blobUrl.slice(this.blobEndpoint.length + 1);
+        const firstSeparator = pathName.indexOf('/');
 
-    //     return {
-    //         blobName: pathName.slice(firstSeparator + 1),
-    //         containerName: pathName.slice(0, firstSeparator)
-    //     };
-    // }
+        return {
+            blobName: pathName.slice(firstSeparator + 1),
+            containerName: pathName.slice(0, firstSeparator)
+        };
+    }
 
     public async deleteBucket(containerName: string) {
         try {
@@ -164,4 +163,12 @@ export default class BlobStorageService {
             throw err;
         }
     }
+}
+
+export function getAzureService(connectionString?: string) {
+    if (!connectionString && !process.env.AZURE_CONNECTION_STRING) {
+        throw new Error('Missing AZURE_CONNECTION_STRING environment variable');
+    }
+
+    return new BlobStorageService(connectionString || process.env.AZURE_CONNECTION_STRING!);
 }

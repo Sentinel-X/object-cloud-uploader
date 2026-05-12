@@ -9,6 +9,7 @@ import moment from 'moment';
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 const BLOB_IMAGE_PATH = path.join(__dirname, 'assets', 'blob_image.jpg');
+// eslint-disable-next-line no-sync
 const imageBuffer = fs.readFileSync(BLOB_IMAGE_PATH) as Buffer<ArrayBufferLike>;
 
 const AWS_ENV: Record<string, string> = {
@@ -27,7 +28,9 @@ const AZURE_ENV: Record<string, string> = {
 };
 
 function setEnv(env: Record<string, string>) {
-    Object.entries(env).forEach(([k, v]) => { process.env[k] = v; });
+    for (const [k, v] of Object.entries(env)) {
+        process.env[k] = v;
+    }
 }
 
 // ─── Environment variable validation ────────────────────────────────────────
@@ -52,8 +55,11 @@ describe('Environment variables', () => {
             } catch (err) {
                 expect((err as Error).message).to.include(varName);
             } finally {
-                if (original !== undefined) process.env[varName] = original;
-                else delete process.env[varName];
+                if (original !== undefined) {
+                    process.env[varName] = original;
+                } else {
+                    delete process.env[varName];
+                }
             }
         });
 
@@ -66,8 +72,11 @@ describe('Environment variables', () => {
             } catch (err) {
                 expect((err as Error).message).to.include(varName);
             } finally {
-                if (original !== undefined) process.env[varName] = original;
-                else delete process.env[varName];
+                if (original !== undefined) {
+                    process.env[varName] = original;
+                } else {
+                    delete process.env[varName];
+                }
             }
         });
     }
@@ -82,8 +91,11 @@ describe('Environment variables', () => {
         } catch (err) {
             expect((err as Error).message).to.include('AZURE_CONNECTION_STRING');
         } finally {
-            if (original !== undefined) process.env.AZURE_CONNECTION_STRING = original;
-            else delete process.env.AZURE_CONNECTION_STRING;
+            if (original !== undefined) {
+                process.env.AZURE_CONNECTION_STRING = original;
+            } else {
+                delete process.env.AZURE_CONNECTION_STRING;
+            }
         }
     });
 
@@ -96,8 +108,11 @@ describe('Environment variables', () => {
         } catch (err) {
             expect((err as Error).message).to.include('AZURE_CONNECTION_STRING');
         } finally {
-            if (original !== undefined) process.env.AZURE_CONNECTION_STRING = original;
-            else delete process.env.AZURE_CONNECTION_STRING;
+            if (original !== undefined) {
+                process.env.AZURE_CONNECTION_STRING = original;
+            } else {
+                delete process.env.AZURE_CONNECTION_STRING;
+            }
         }
     });
 
@@ -111,8 +126,11 @@ describe('Environment variables', () => {
         } catch (err) {
             expect((err as Error).message).to.include('CLOUD_TYPE');
         } finally {
-            if (original !== undefined) process.env.CLOUD_TYPE = original;
-            else delete process.env.CLOUD_TYPE;
+            if (original !== undefined) {
+                process.env.CLOUD_TYPE = original;
+            } else {
+                delete process.env.CLOUD_TYPE;
+            }
         }
     });
 
@@ -125,8 +143,11 @@ describe('Environment variables', () => {
         } catch (err) {
             expect((err as Error).message).to.include('invalid_cloud_type');
         } finally {
-            if (original !== undefined) process.env.CLOUD_TYPE = original;
-            else delete process.env.CLOUD_TYPE;
+            if (original !== undefined) {
+                process.env.CLOUD_TYPE = original;
+            } else {
+                delete process.env.CLOUD_TYPE;
+            }
         }
     });
 });

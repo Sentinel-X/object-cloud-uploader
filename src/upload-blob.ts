@@ -1,28 +1,11 @@
 import moment from 'moment';
 import { S3ServiceException } from '@aws-sdk/client-s3';
 import { RestError } from '@azure/storage-blob';
-import AWSBlobStorageService from './services/aws-blob';
-import BlobStorageService from './services/azure-blob';
 import { DetectionAlreadyExists, InvalidCloudType } from './services/exceptions';
-
-function getAwsService() {
-    return new AWSBlobStorageService({
-        region: process.env.AWS_REGION!,
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-        endpoint: process.env.AWS_ENDPOINT!
-    });
-}
-
-function getAzureService() {
-    return new BlobStorageService(process.env.AZURE_CONNECTION_STRING!);
-}
+import { getAzureService } from './services/azure-blob';
+import { getAwsService } from './services/aws-blob';
 
 async function uploadToAzure(objectName: string, blob: Buffer<ArrayBufferLike>) {
-    if (!process.env.AZURE_CONNECTION_STRING) {
-        throw new Error('Missing AZURE_CONNECTION_STRING environment variable');
-    }
-
     const azureBlobStorageService = getAzureService();
 
     const containerName = moment().format('YYYY-MM-DD');
@@ -53,25 +36,9 @@ async function uploadToAzure(objectName: string, blob: Buffer<ArrayBufferLike>) 
 }
 
 async function uploadToAws(objectName: string, blob: Buffer<ArrayBufferLike>) {
-    if (!process.env.AWS_ACCESS_KEY_ID) {
-        throw new Error('Missing AWS_ACCESS_KEY_ID environment variable');
-    }
-
-    if (!process.env.AWS_SECRET_ACCESS_KEY) {
-        throw new Error('Missing AWS_SECRET_ACCESS_KEY environment variable');
-    }
-
     const awsBucketName = process.env.AWS_BUCKET_NAME!;
     if (!awsBucketName || awsBucketName === '') {
         throw new Error('Missing AWS_BUCKET_NAME environment variable');
-    }
-
-    if (!process.env.AWS_ENDPOINT) {
-        throw new Error('Missing AWS_ENDPOINT environment variable');
-    }
-
-    if (!process.env.AWS_REGION) {
-        throw new Error('Missing AWS_REGION environment variable');
     }
 
     const awsBlobStorageService = getAwsService();

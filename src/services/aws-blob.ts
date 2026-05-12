@@ -2,16 +2,16 @@ import {
     S3Client,
     PutObjectCommand,
     CreateBucketCommand,
-    // GetObjectCommand,
+    GetObjectCommand,
     PutBucketCorsCommand,
     DeleteBucketCommand,
     ListObjectsV2Command,
     DeleteObjectsCommand,
     S3ServiceException
 } from '@aws-sdk/client-s3';
-// import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { readFile } from 'fs/promises';
-// import moment from 'moment';
+import moment from 'moment';
 import { DetectionAlreadyExists } from './exceptions';
 
 type CreateObjectParamsBase = {
@@ -131,44 +131,43 @@ export default class AWSBlobStorageService {
         }
     }
 
-    // TODO
-    // public async generateSasTokenForBlob(
-    //     containerName: string,
-    //     blobName: string,
-    //     millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()
-    // ) {
-    //     const command = new GetObjectCommand({
-    //         Bucket: containerName,
-    //         Key: blobName,
-    //     });
+    public async generateSasTokenForBlob(
+        containerName: string,
+        blobName: string,
+        millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()
+    ) {
+        const command = new GetObjectCommand({
+            Bucket: containerName,
+            Key: blobName,
+        });
 
-    //     const signedUrl = await getSignedUrl(this.s3Client, command, {
-    //         expiresIn: Math.floor(millisecondsDuration / 1000),
-    //     });
+        const signedUrl = await getSignedUrl(this.s3Client, command, {
+            expiresIn: Math.floor(millisecondsDuration / 1000),
+        });
 
-    //     return signedUrl.split('?')[1];
-    // }
+        return signedUrl.split('?')[1];
+    }
 
-    // public getBlobName(blobUrl: string) {
-    //     const url = new URL(blobUrl);
+    public getBlobName(blobUrl: string) {
+        const url = new URL(blobUrl);
 
-    //     let containerName: string;
-    //     let blobName: string;
+        let containerName: string;
+        let blobName: string;
 
-    //     if (blobUrl.startsWith(this.blobEndpoint)) {
-    //         // Path-style: https://s3.region.amazonaws.com/bucket/key
-    //         const pathName = url.pathname.slice(1); // remove leading /
-    //         const firstSeparator = pathName.indexOf('/');
-    //         containerName = pathName.slice(0, firstSeparator);
-    //         blobName = pathName.slice(firstSeparator + 1);
-    //     } else {
-    //         // Virtual-hosted-style: https://bucket.s3.region.amazonaws.com/key
-    //         containerName = url.hostname.split('.')[0];
-    //         blobName = url.pathname.slice(1);
-    //     }
+        if (blobUrl.startsWith(this.blobEndpoint)) {
+            // Path-style: https://s3.region.amazonaws.com/bucket/key
+            const pathName = url.pathname.slice(1); // remove leading /
+            const firstSeparator = pathName.indexOf('/');
+            containerName = pathName.slice(0, firstSeparator);
+            blobName = pathName.slice(firstSeparator + 1);
+        } else {
+            // Virtual-hosted-style: https://bucket.s3.region.amazonaws.com/key
+            containerName = url.hostname.split('.')[0];
+            blobName = url.pathname.slice(1);
+        }
 
-    //     return { blobName, containerName };
-    // }
+        return { blobName, containerName };
+    }
 
     private buildObjectUrl(containerName: string, objectName: string) {
         if (this.blobEndpoint.includes('amazonaws.com')) {
@@ -239,4 +238,36 @@ export default class AWSBlobStorageService {
         }
     }
 
+}
+
+export function getAwsService(config?: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    region: string;
+    endpoint?: string;
+}) {
+    if (!config) {
+        if (!process.env.AWS_ACCESS_KEY_ID) {
+            throw new Error('Missing AWS_ACCESS_KEY_ID environment variable');
+        }
+
+        if (!process.env.AWS_SECRET_ACCESS_KEY) {
+            throw new Error('Missing AWS_SECRET_ACCESS_KEY environment variable');
+        }
+
+        if (!process.env.AWS_ENDPOINT) {
+            throw new Error('Missing AWS_ENDPOINT environment variable');
+        }
+
+        if (!process.env.AWS_REGION) {
+            throw new Error('Missing AWS_REGION environment variable');
+        }
+    }
+
+    return new AWSBlobStorageService(config || {
+        region: process.env.AWS_REGION!,
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        endpoint: process.env.AWS_ENDPOINT!
+    });
 }
