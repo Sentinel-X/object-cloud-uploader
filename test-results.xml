@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="0.205" tests="22" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-05-12T12:23:03" tests="0" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="Environment variables" timestamp="2026-05-12T12:23:03" tests="14" file="/home/htdamasio/Documentos/Code/sentinelx/object-cloud-uploader/tests/upload.test.ts" time="0.012" failures="0">
+    <testcase name="Environment variables throws when AWS_ACCESS_KEY_ID is missing" time="0.002" classname="throws when AWS_ACCESS_KEY_ID is missing">
+    </testcase>
+    <testcase name="Environment variables throws when AWS_ACCESS_KEY_ID is empty string" time="0.001" classname="throws when AWS_ACCESS_KEY_ID is empty string">
+    </testcase>
+    <testcase name="Environment variables throws when AWS_SECRET_ACCESS_KEY is missing" time="0.000" classname="throws when AWS_SECRET_ACCESS_KEY is missing">
+    </testcase>
+    <testcase name="Environment variables throws when AWS_SECRET_ACCESS_KEY is empty string" time="0.000" classname="throws when AWS_SECRET_ACCESS_KEY is empty string">
+    </testcase>
+    <testcase name="Environment variables throws when AWS_BUCKET_NAME is missing" time="0.000" classname="throws when AWS_BUCKET_NAME is missing">
+    </testcase>
+    <testcase name="Environment variables throws when AWS_BUCKET_NAME is empty string" time="0.000" classname="throws when AWS_BUCKET_NAME is empty string">
+    </testcase>
+    <testcase name="Environment variables throws when AWS_ENDPOINT is missing" time="0.000" classname="throws when AWS_ENDPOINT is missing">
+    </testcase>
+    <testcase name="Environment variables throws when AWS_ENDPOINT is empty string" time="0.000" classname="throws when AWS_ENDPOINT is empty string">
+    </testcase>
+    <testcase name="Environment variables throws when AWS_REGION is missing" time="0.001" classname="throws when AWS_REGION is missing">
+    </testcase>
+    <testcase name="Environment variables throws when AWS_REGION is empty string" time="0.000" classname="throws when AWS_REGION is empty string">
+    </testcase>
+    <testcase name="Environment variables throws when AZURE_CONNECTION_STRING is missing" time="0.001" classname="throws when AZURE_CONNECTION_STRING is missing">
+    </testcase>
+    <testcase name="Environment variables throws when AZURE_CONNECTION_STRING is empty string" time="0.000" classname="throws when AZURE_CONNECTION_STRING is empty string">
+    </testcase>
+    <testcase name="Environment variables throws when CLOUD_TYPE is missing" time="0.000" classname="throws when CLOUD_TYPE is missing">
+    </testcase>
+    <testcase name="Environment variables throws when CLOUD_TYPE is invalid" time="0.000" classname="throws when CLOUD_TYPE is invalid">
+    </testcase>
+  </testsuite>
+  <testsuite name="uploadImageToBlob — AWS (s3Ninja)" timestamp="2026-05-12T12:23:03" tests="4" file="/home/htdamasio/Documentos/Code/sentinelx/object-cloud-uploader/tests/upload.test.ts" time="0.084" failures="0">
+    <testcase name="uploadImageToBlob — AWS (s3Ninja) uploads successfully and returns a URL" time="0.040" classname="uploads successfully and returns a URL">
+    </testcase>
+    <testcase name="uploadImageToBlob — AWS (s3Ninja) prepends today&apos;s date to the object name" time="0.004" classname="prepends today&apos;s date to the object name">
+    </testcase>
+    <testcase name="uploadImageToBlob — AWS (s3Ninja) does not throw uploading the same object twice (PreconditionFailed handled)" time="0.009" classname="does not throw uploading the same object twice (PreconditionFailed handled)">
+    </testcase>
+    <testcase name="uploadImageToBlob — AWS (s3Ninja) creates bucket automatically if it does not exist" time="0.005" classname="creates bucket automatically if it does not exist">
+    </testcase>
+  </testsuite>
+  <testsuite name="uploadImageToBlob — Azure (Azurite)" timestamp="2026-05-12T12:23:04" tests="4" file="/home/htdamasio/Documentos/Code/sentinelx/object-cloud-uploader/tests/upload.test.ts" time="0.107" failures="0">
+    <testcase name="uploadImageToBlob — Azure (Azurite) uploads successfully and returns a URL" time="0.027" classname="uploads successfully and returns a URL">
+    </testcase>
+    <testcase name="uploadImageToBlob — Azure (Azurite) uses today&apos;s date as the container name" time="0.008" classname="uses today&apos;s date as the container name">
+    </testcase>
+    <testcase name="uploadImageToBlob — Azure (Azurite) does not throw uploading the same object twice (DetectionAlreadyExists handled)" time="0.015" classname="does not throw uploading the same object twice (DetectionAlreadyExists handled)">
+    </testcase>
+    <testcase name="uploadImageToBlob — Azure (Azurite) creates container automatically if it does not exist" time="0.006" classname="creates container automatically if it does not exist">
+    </testcase>
+  </testsuite>
+</testsuites>

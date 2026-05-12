@@ -1,0 +1,47 @@
+name: Run tests
+
+on:
+  push:
+    branches: ["main", "stage"]
+  pull_request:
+    branches: ["main", "stage"]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v3.8.1
+        with:
+          node-version-file: .nvmrc
+
+      - name: Installing dependencies
+        run: npm install
+
+      - name: Linter Validation
+        run: npm run eslint
+
+      - name: Ts prune Validation
+        run: npm run ts-prune
+
+      - name: Find unused class methods
+        run: npm run check-unused-class-methods
+
+      - name: Build
+        run: npm run build
+
+      - name: Run Azurite
+        run: |
+          docker run --name azurite -d -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck
+
+      - name: Run s3Ninja
+        run: docker run -d -p 9444:9000 scireum/s3-ninja:latest
+
+      - name: Generate .env file
+        run: cp .env.example .env
+
+      - name: Run tests
+        run: npm run devops_coverage
