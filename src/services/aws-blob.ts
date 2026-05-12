@@ -114,7 +114,7 @@ export default class AWSBlobStorageService implements IBlobStorageService {
             );
 
             // To make the bucket public, you also need to configure
-            // a Bucket Policy separately, S3 does not expose a public ACL by defaultão.
+            // a Bucket Policy separately, S3 does not expose a public ACL by default.
             if (isPublic) {
                 console.warn(
                     'For public buckets in S3, configure a bucket policy separately.'
@@ -124,7 +124,6 @@ export default class AWSBlobStorageService implements IBlobStorageService {
             if (err instanceof S3ServiceException && (err?.name === 'BucketAlreadyOwnedByYou' || err?.name === 'BucketAlreadyExists')) {
                 return;
             }
-            console.error(err);
             throw err;
         }
     }
@@ -136,7 +135,7 @@ export default class AWSBlobStorageService implements IBlobStorageService {
         });
 
         const signedUrl = await getSignedUrl(this.s3Client, command, {
-            expiresIn: Math.floor(millisecondsDuration / 1000),
+            expiresIn: moment.duration(millisecondsDuration, 'milliseconds').asSeconds(),
         });
 
         return String(signedUrl.split('?')[1]);
@@ -174,14 +173,10 @@ export default class AWSBlobStorageService implements IBlobStorageService {
     }
 
     public async deleteBucket(containerName: string) {
-        try {
-            await this.deleteAllObjects(containerName);
+        await this.deleteAllObjects(containerName);
 
-            const command = new DeleteBucketCommand({ Bucket: containerName });
-            await this.s3Client.send(command);
-        } catch (err) {
-            console.error(err);
-        }
+        const command = new DeleteBucketCommand({ Bucket: containerName });
+        await this.s3Client.send(command);
     }
 
     private async getAllObjectKeys(containerName: string) {
@@ -207,28 +202,20 @@ export default class AWSBlobStorageService implements IBlobStorageService {
     }
 
     private async deleteAllObjects(containerName: string) {
-        try {
-            const keys = await this.getAllObjectKeys(containerName);
+        const keys = await this.getAllObjectKeys(containerName);
 
-            if (keys.length === 0) {
-                return;
-            }
+        const batchSize = 1000;
+        for (let i = 0; i < keys.length; i += batchSize) {
+            const batch = keys.slice(i, i + batchSize);
 
-            const batchSize = 1000;
-            for (let i = 0; i < keys.length; i += batchSize) {
-                const batch = keys.slice(i, i + batchSize);
+            const deleteCommand = new DeleteObjectsCommand({
+                Bucket: containerName,
+                Delete: {
+                    Objects: batch,
+                },
+            });
 
-                const deleteCommand = new DeleteObjectsCommand({
-                    Bucket: containerName,
-                    Delete: {
-                        Objects: batch,
-                    },
-                });
-
-                await this.s3Client.send(deleteCommand);
-            }
-        } catch (err) {
-            console.error(err);
+            await this.s3Client.send(deleteCommand);
         }
     }
 

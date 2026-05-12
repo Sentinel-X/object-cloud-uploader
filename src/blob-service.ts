@@ -2,6 +2,7 @@ import AWSBlobStorageService from './services/aws-blob';
 import BlobStorageService from './services/azure-blob';
 import { InvalidCloudType } from './services/exceptions';
 import { CreateObjectParams, IBlobStorageService } from './services/blob-interface';
+import { NoSuchBucket } from '@aws-sdk/client-s3';
 
 export type BlobConfig = ({
     blobStorageType: 'aws';
@@ -80,6 +81,13 @@ export default class BlobService {
      * @param {string} containerName - Name of the bucket or container to delete.
      */
     public async deleteBucket(containerName: string) {
-        await this.service.deleteBucket(containerName);
+        try {
+            await this.service.deleteBucket(containerName);
+        } catch (err) {
+            if (err instanceof NoSuchBucket) {
+                return;
+            }
+            throw err;
+        }
     }
 }
