@@ -70,6 +70,19 @@ async function uploadToAws(objectName: string, blob: Buffer<ArrayBufferLike>) {
     return imageUrl;
 }
 
+/**
+ * Uploads an image to the configured cloud provider.
+ * * This function is provider-agnostic and chooses between AWS or Azure based on the
+ * `CLOUD_TYPE` environment variable. It automatically handles:
+ * 1. Creating the bucket/container if it does not exist.
+ * 2. Organizing folders by date (YYYY-MM-DD).
+ * 3. Handling duplicates (ignores the file if it already exists).
+ * * @param {string} objectName - The name/path the file will have in storage.
+ * @param {Buffer<ArrayBufferLike>} blob - The buffer of the image to be uploaded.
+ * @returns {Promise<string>} The public or private URL of the created object.
+ * @throws {Error} If `CLOUD_TYPE` is missing or if the provider is invalid.
+ * @throws {InvalidCloudType} If the configured cloud type is not supported.
+ */
 export async function uploadImageToBlob(objectName: string, blob: Buffer<ArrayBufferLike>) {
     const cloudType = process.env.CLOUD_TYPE!;
     if (!cloudType || cloudType === '') {
