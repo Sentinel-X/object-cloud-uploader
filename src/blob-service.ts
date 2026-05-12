@@ -34,6 +34,7 @@ export default class BlobService {
         }
     }
 
+    /** Create an object */
     public createObject(params: CreateObjectParams) {
         return this.service.createObject(params);
     }
