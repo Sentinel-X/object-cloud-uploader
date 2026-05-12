@@ -34,27 +34,27 @@ export default class BlobService {
         }
     }
 
-    /** {@inheritDoc IBlobStorageService.createObject} */
+    /** @see IBlobStorageService.createObject */
     public createObject(params: CreateObjectParams) {
         return this.service.createObject(params);
     }
 
-    /** {@inheritDoc IBlobStorageService.createBucket} */
+    /** @see IBlobStorageService.createBucket */
     public createBucket(containerName: string, isPublic?: boolean) {
         return this.service.createBucket(containerName, isPublic);
     }
 
-    /** {@inheritDoc IBlobStorageService.getBlobName} */
+    /** @see IBlobStorageService.getBlobName */
     public getBlobName(blobUrl: string) {
         return this.service.getBlobName(blobUrl);
     }
 
-    /** {@inheritDoc IBlobStorageService.generateSasTokenForBlob} */
+    /** @see IBlobStorageService.generateSasTokenForBlob */
     public generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration?: number) {
         return this.service.generateSasTokenForBlob(containerName, blobName, millisecondsDuration);
     }
 
-    /** {@inheritDoc IBlobStorageService.deleteBucket} */
+    /** @see IBlobStorageService.deleteBucket */
     public async deleteBucket(containerName: string) {
         await this.service.deleteBucket(containerName);
     }
