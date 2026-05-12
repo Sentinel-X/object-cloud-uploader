@@ -7,7 +7,8 @@ import {
     DeleteBucketCommand,
     ListObjectsV2Command,
     DeleteObjectsCommand,
-    S3ServiceException
+    S3ServiceException,
+    NoSuchBucket
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { readFile } from 'fs/promises';
@@ -173,10 +174,17 @@ export default class AWSBlobStorageService implements IBlobStorageService {
     }
 
     public async deleteBucket(containerName: string) {
-        await this.deleteAllObjects(containerName);
+        try {
+            await this.deleteAllObjects(containerName);
 
-        const command = new DeleteBucketCommand({ Bucket: containerName });
-        await this.s3Client.send(command);
+            const command = new DeleteBucketCommand({ Bucket: containerName });
+            await this.s3Client.send(command);
+        } catch (err) {
+            if (err instanceof NoSuchBucket) {
+                return;
+            }
+            throw err;
+        }
     }
 
     private async getAllObjectKeys(containerName: string) {
