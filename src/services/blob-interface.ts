@@ -36,7 +36,7 @@ export type CreateObjectParams =
 export interface IBlobStorageService {
     createObject(params: CreateObjectParams): Promise<string>;
     createBucket(containerName: string, isPublic?: boolean): Promise<void>;
-    generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration?: number): unknown;
+    generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration?: number): Promise<string>;
     getBlobName(blobUrl: string): { blobName: string; containerName: string; };
     deleteBucket(containerName: string): Promise<void>;
 }

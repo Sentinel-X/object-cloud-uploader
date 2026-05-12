@@ -107,12 +107,11 @@ export default class BlobStorageService implements IBlobStorageService {
             if (err instanceof RestError && err.code == 'ContainerAlreadyExists') {
                 return;
             }
-            console.error(err);
             throw err;
         }
     }
 
-    public generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()) {
+    public async generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()) {
         const containerClient = this.blobServiceClient.getContainerClient(containerName);
         const startsOn = new Date();
 
@@ -131,7 +130,8 @@ export default class BlobStorageService implements IBlobStorageService {
             version: '2024-11-04',
             protocol,
         }, containerClient.credential as StorageSharedKeyCredential);
-        return sasToken;
+
+        return String(sasToken);
     }
 
     public getBlobName(blobUrl: string) {
