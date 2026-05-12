@@ -13,19 +13,9 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { readFile } from 'fs/promises';
 import moment from 'moment';
 import { DetectionAlreadyExists } from './exceptions';
+import { CreateObjectParams, IBlobStorageService } from './blob-interface';
 
-type CreateObjectParamsBase = {
-    containerName: string;
-    objectName: string;
-    contentType?: string;
-    ignoreIfAlreadyExists?: boolean;
-};
-
-type CreateObjectParams =
-    | (CreateObjectParamsBase & { fileBuffer: Buffer; filePath?: never; })
-    | (CreateObjectParamsBase & { filePath: string; fileBuffer?: never; });
-
-export default class AWSBlobStorageService {
+export default class AWSBlobStorageService implements IBlobStorageService {
     private s3Client: S3Client;
     private blobEndpoint: string;
 
@@ -63,7 +53,8 @@ export default class AWSBlobStorageService {
         filePath,
         contentType,
         ignoreIfAlreadyExists,
-    }: CreateObjectParams) {
+        forceContainerCreation
+    }: CreateObjectParams): Promise<string> {
         ignoreIfAlreadyExists = ignoreIfAlreadyExists ?? false;
 
         try {
@@ -86,6 +77,13 @@ export default class AWSBlobStorageService {
                     return this.buildObjectUrl(containerName, objectName);
                 } else {
                     throw new DetectionAlreadyExists('Blob already uploaded.');
+                }
+            } else if (err instanceof S3ServiceException && err?.name === 'NoSuchBucket' && forceContainerCreation) {
+                await this.createBucket(containerName);
+                if (fileBuffer) {
+                    return await this.createObject({ containerName, objectName, contentType, fileBuffer, ignoreIfAlreadyExists, forceContainerCreation: false });
+                } else if (filePath) {
+                    return await this.createObject({ containerName, objectName, contentType, filePath, ignoreIfAlreadyExists, forceContainerCreation: false });
                 }
             }
             throw err;
@@ -131,11 +129,7 @@ export default class AWSBlobStorageService {
         }
     }
 
-    public async generateSasTokenForBlob(
-        containerName: string,
-        blobName: string,
-        millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()
-    ) {
+    public async generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()) {
         const command = new GetObjectCommand({
             Bucket: containerName,
             Key: blobName,
@@ -145,7 +139,7 @@ export default class AWSBlobStorageService {
             expiresIn: Math.floor(millisecondsDuration / 1000),
         });
 
-        return signedUrl.split('?')[1];
+        return String(signedUrl.split('?')[1]);
     }
 
     public getBlobName(blobUrl: string) {

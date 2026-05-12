@@ -8,19 +8,9 @@ import {
 } from '@azure/storage-blob';
 import moment from 'moment';
 import { DetectionAlreadyExists } from './exceptions';
+import { CreateObjectParams, IBlobStorageService } from './blob-interface';
 
-type CreateObjectParamsBase = {
-    containerName: string;
-    objectName: string;
-    contentType?: string;
-    ignoreIfAlreadyExists?: boolean;
-};
-
-type CreateObjectParams =
-    | (CreateObjectParamsBase & { fileBuffer: Buffer; filePath?: never; })
-    | (CreateObjectParamsBase & { filePath: string; fileBuffer?: never; });
-
-export default class BlobStorageService {
+export default class BlobStorageService implements IBlobStorageService {
     private blobServiceClient: BlobServiceClient;
     private blobEndpoint: string;
 
@@ -54,7 +44,7 @@ export default class BlobStorageService {
      * create object can either receiver a `fileBuffer` or `filePath` to upload a file to azure blob
      * @returns the blobUrl for the created objected
      */
-    public async createObject({ containerName, objectName, fileBuffer, filePath, contentType, ignoreIfAlreadyExists }: CreateObjectParams) {
+    public async createObject({ containerName, objectName, fileBuffer, filePath, contentType, ignoreIfAlreadyExists, forceContainerCreation }: CreateObjectParams): Promise<string> {
         if (!ignoreIfAlreadyExists) {
             ignoreIfAlreadyExists = false;
         }
@@ -85,6 +75,13 @@ export default class BlobStorageService {
                     return `${this.blobEndpoint}/${containerName}/${objectName}`;
                 } else {
                     throw new DetectionAlreadyExists('Blob already uploaded.');
+                }
+            } else if (err instanceof RestError && err.code == 'ContainerNotFound' && forceContainerCreation) {
+                await this.createBucket(containerName);
+                if (fileBuffer) {
+                    return await this.createObject({ containerName, objectName, contentType, fileBuffer, ignoreIfAlreadyExists, forceContainerCreation: false });
+                } else if (filePath) {
+                    return await this.createObject({ containerName, objectName, contentType, filePath, ignoreIfAlreadyExists, forceContainerCreation: false });
                 }
             }
             throw err;

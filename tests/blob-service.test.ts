@@ -57,109 +57,207 @@ describe('BlobService — constructor', () => {
     });
 });
 
-// ─── AWS / s3Ninja ───────────────────────────────────────────────────────────
+// ─── createObject ─────────────────────────────────────────────────────────────
 
-describe('BlobService.uploadImageToBlob — AWS (s3Ninja)', () => {
+describe('BlobService.createObject — AWS (s3Ninja)', () => {
     it('uploads successfully and returns a URL', async () => {
-        const result = await awsService.uploadImageToBlob('test-upload.jpg', imageBuffer);
+        const result = await awsService.createObject({
+            containerName: AWS_CONFIG.containerName,
+            objectName: `test-upload-${Date.now()}.jpg`,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
         expect(result).to.be.a('string').and.not.empty;
     });
 
-    it('prepends today\'s date to the object name', async () => {
-        const today = moment().format('YYYY-MM-DD');
-        const result = await awsService.uploadImageToBlob('date-test.jpg', imageBuffer);
-        expect(result).to.include(today);
+    it('creates bucket automatically and uploads if bucket does not exist', async () => {
+        const service = new BlobService({ ...AWS_CONFIG });
+        const result = await service.createObject({
+            containerName: 'auto-created-bucket',
+            objectName: `new-bucket-test-${Date.now()}.jpg`,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+            forceContainerCreation: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
     });
 
-    it('does not throw uploading the same object twice (PreconditionFailed handled)', async () => {
-        await awsService.uploadImageToBlob('duplicate.jpg', imageBuffer);
-        const result = await awsService.uploadImageToBlob('duplicate.jpg', imageBuffer);
-        expect(result).to.be.a('string');
-    });
-
-    it('creates bucket automatically if it does not exist', async () => {
-        const service = new BlobService({ ...AWS_CONFIG, containerName: 'auto-created-bucket' });
-        const result = await service.uploadImageToBlob('new-bucket-test.jpg', imageBuffer);
+    it('returns existing URL when ignoreIfAlreadyExists is true', async () => {
+        const objectName = `ignore-duplicate-${Date.now()}.jpg`;
+        await awsService.createObject({
+            containerName: AWS_CONFIG.containerName,
+            objectName,
+            fileBuffer: imageBuffer,
+        });
+        const result = await awsService.createObject({
+            containerName: AWS_CONFIG.containerName,
+            objectName,
+            fileBuffer: imageBuffer,
+            ignoreIfAlreadyExists: true,
+        });
         expect(result).to.be.a('string').and.not.empty;
     });
 });
 
-describe('BlobService.getSasTokenForBlob — AWS (s3Ninja)', () => {
-    let blobUrl: string;
-
+describe('BlobService.createObject — Azure (Azurite)', () => {
     before(async () => {
-        blobUrl = await awsService.uploadImageToBlob(`sas-test-${Date.now()}.jpg`, imageBuffer) ?? '';
+        await azureService.createBucket(AZURE_CONTAINER);
     });
 
-    it('returns a token string for a valid blob URL', async () => {
-        const token = await awsService.getSasTokenForBlob('aws', blobUrl);
+    it('uploads successfully and returns a URL', async () => {
+        const result = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName: `test-upload-${Date.now()}.jpg`,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+
+    it('creates container automatically and uploads if container does not exist', async () => {
+        const tempContainer = `temp-${Date.now()}`;
+        try {
+            const result = await azureService.createObject({
+                containerName: tempContainer,
+                objectName: 'new-container-test.jpg',
+                fileBuffer: imageBuffer,
+                contentType: 'image/jpeg',
+                forceContainerCreation: true
+            });
+            expect(result).to.be.a('string').and.not.empty;
+        } finally {
+            await azureService.deleteBucket(tempContainer);
+        }
+    });
+
+    it('throws DetectionAlreadyExists when object already exists', async () => {
+        const objectName = `duplicate-${Date.now()}.jpg`;
+        await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+        });
+        try {
+            await azureService.createObject({
+                containerName: AZURE_CONTAINER,
+                objectName,
+                fileBuffer: imageBuffer,
+            });
+            expect.fail('should have thrown');
+        } catch (err) {
+            expect((err as Error).constructor.name).to.equal('DetectionAlreadyExists');
+        }
+    });
+
+    it('returns existing URL when ignoreIfAlreadyExists is true', async () => {
+        const objectName = `ignore-duplicate-${Date.now()}.jpg`;
+        await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+        });
+        const result = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            ignoreIfAlreadyExists: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+});
+
+// ─── getBlobName ─────────────────────────────────────────────────────────────
+
+describe('BlobService.getBlobName — AWS', () => {
+    it('extracts containerName and blobName from a valid URL', async () => {
+        const url = await awsService.createObject({
+            containerName: AWS_CONFIG.containerName,
+            objectName: `get-blob-name-${Date.now()}.jpg`,
+            fileBuffer: imageBuffer,
+        });
+        const { containerName, blobName } = awsService.getBlobName(url);
+        expect(containerName).to.equal(AWS_CONFIG.containerName);
+        expect(blobName).to.be.a('string').and.not.empty;
+    });
+});
+
+describe('BlobService.getBlobName — Azure', () => {
+    before(async () => {
+        await azureService.createBucket(AZURE_CONTAINER);
+    });
+
+    it('extracts containerName and blobName from a valid URL', async () => {
+        const url = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName: `get-blob-name-${Date.now()}.jpg`,
+            fileBuffer: imageBuffer,
+        });
+        const { containerName, blobName } = azureService.getBlobName(url);
+        expect(containerName).to.equal(AZURE_CONTAINER);
+        expect(blobName).to.be.a('string').and.not.empty;
+    });
+
+    it('throws when URL does not belong to the configured endpoint', () => {
+        expect(() => azureService.getBlobName('http://other-account.blob.core.windows.net/container/blob.jpg'))
+            .to.throw('is not a valid URL');
+    });
+});
+
+// ─── generateSasTokenForBlob ──────────────────────────────────────────────────
+
+describe('BlobService.generateSasTokenForBlob — AWS (s3Ninja)', () => {
+    let containerName: string;
+    let blobName: string;
+
+    before(async () => {
+        const url = await awsService.createObject({
+            containerName: AWS_CONFIG.containerName,
+            objectName: `sas-test-${Date.now()}.jpg`,
+            fileBuffer: imageBuffer,
+        });
+        ({ containerName, blobName } = awsService.getBlobName(url));
+    });
+
+    it('returns a token string', async () => {
+        const token = await awsService.generateSasTokenForBlob(containerName, blobName);
         expect(token).to.exist;
-        expect(token!.toString()).to.be.a('string').and.not.empty;
+        expect(String(token)).to.be.a('string').and.not.empty;
     });
 
     it('token contains expected query params', async () => {
-        const token = await awsService.getSasTokenForBlob('aws', blobUrl);
-        const tokenStr = token!.toString();
+        const token = await awsService.generateSasTokenForBlob(containerName, blobName);
+        const tokenStr = String(token);
         expect(tokenStr).to.include('X-Amz-Signature');
         expect(tokenStr).to.include('X-Amz-Credential');
         expect(tokenStr).to.include('X-Amz-Expires');
     });
 });
 
-// ─── Azure / Azurite ─────────────────────────────────────────────────────────
-
-describe('BlobService.uploadImageToBlob — Azure (Azurite)', () => {
-    it('uploads successfully and returns a URL', async () => {
-        const result = await azureService.uploadImageToBlob(`test-upload-${Date.now()}.jpg`, imageBuffer);
-        expect(result).to.be.a('string').and.not.empty;
-    });
-
-    it('uses today\'s date as the container name', async () => {
-        const today = moment().format('YYYY-MM-DD');
-        const result = await azureService.uploadImageToBlob(`container-test-${Date.now()}.jpg`, imageBuffer);
-        expect(result).to.include(today);
-    });
-
-    it('does not throw uploading the same object twice (DetectionAlreadyExists handled)', async () => {
-        await azureService.uploadImageToBlob('duplicate.jpg', imageBuffer);
-        const result = await azureService.uploadImageToBlob('duplicate.jpg', imageBuffer);
-        expect(result).to.be.a('string');
-    });
-
-    it('creates container automatically if it does not exist', async () => {
-        const result = await azureService.uploadImageToBlob(`after-delete-${Date.now()}.jpg`, imageBuffer);
-        expect(result).to.be.a('string').and.not.empty;
-        expect(result).to.include(moment().format('YYYY-MM-DD'));
-    });
-});
-
-describe('BlobService.getSasTokenForBlob — Azure (Azurite)', () => {
-    let blobUrl: string;
+describe('BlobService.generateSasTokenForBlob — Azure (Azurite)', () => {
+    let containerName: string;
+    let blobName: string;
 
     before(async () => {
-        blobUrl = await azureService.uploadImageToBlob(`sas-test-${Date.now()}.jpg`, imageBuffer) ?? '';
+        await azureService.createBucket(AZURE_CONTAINER);
+        const url = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName: `sas-test-${Date.now()}.jpg`,
+            fileBuffer: imageBuffer,
+        });
+        ({ containerName, blobName } = azureService.getBlobName(url));
     });
 
-    it('returns a token for a valid blob URL', async () => {
-        const token = await azureService.getSasTokenForBlob('azure', blobUrl);
+    it('returns a token string', async () => {
+        const token = await azureService.generateSasTokenForBlob(containerName, blobName);
         expect(token).to.exist;
-        expect(token!.toString()).to.be.a('string').and.not.empty;
+        expect(String(token)).to.be.a('string').and.not.empty;
     });
 
     it('token contains expected query params', async () => {
-        const token = await azureService.getSasTokenForBlob('azure', blobUrl);
-        const tokenStr = token!.toString();
+        const token = await azureService.generateSasTokenForBlob(containerName, blobName);
+        const tokenStr = String(token);
         expect(tokenStr).to.include('sig=');
         expect(tokenStr).to.include('se=');
         expect(tokenStr).to.include('sp=');
-    });
-
-    it('throws when URL does not belong to the configured endpoint', async () => {
-        try {
-            await azureService.getSasTokenForBlob('azure', 'http://other-account.blob.core.windows.net/container/blob.jpg');
-            expect.fail('should have thrown');
-        } catch (err) {
-            expect((err as Error).message).to.include('is not a valid URL');
-        }
     });
 });
