@@ -13,6 +13,7 @@
     "test_file": "mocha -r tsx/cjs --timeout 180000 --exit",
     "coverage": "nyc --reporter=html --reporter=text --reporter=lcov mocha -r tsx/cjs 'tests/**/**.test.ts' --timeout 180000 --exit && nyc report --reporter=cobertura && mv ./coverage/cobertura-coverage.xml ./coverage.cobertura.xml",
     "devops_coverage": "nyc mocha -r tsx/cjs 'tests/**/**.test.ts' --reporter ./tests/assets/multiple_reporters.js --timeout 180000 --exit",
+    "generate_cobertura": "nyc report --reporter=cobertura",
     "ts-prune": "ts-prune --error --ignore 'eslint.config.mjs|index.ts'",
     "check-unused-class-methods": "ts-node ./tests/assets/find_unused_class_methods.ts"
   },
