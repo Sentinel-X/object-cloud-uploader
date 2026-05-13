@@ -8,7 +8,8 @@ import {
     ListObjectsV2Command,
     DeleteObjectsCommand,
     S3ServiceException,
-    NoSuchBucket
+    NoSuchBucket,
+    DeleteObjectCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { readFile } from 'fs/promises';
@@ -54,9 +55,11 @@ export default class AWSBlobStorageService implements IBlobStorageService {
         filePath,
         contentType,
         ignoreIfAlreadyExists,
-        forceContainerCreation
+        forceContainerCreation,
+        overwrite
     }: CreateObjectParams): Promise<string> {
         ignoreIfAlreadyExists = ignoreIfAlreadyExists ?? false;
+        overwrite = overwrite ?? false;
 
         try {
             const body = fileBuffer ?? (await readFile(filePath!));
@@ -67,7 +70,7 @@ export default class AWSBlobStorageService implements IBlobStorageService {
                 Body: body,
                 ContentType: contentType,
                 // Same as Azure ifNoneMatch: '*'
-                IfNoneMatch: '*',
+                ...(overwrite ? {} : { IfNoneMatch: '*' }),
             });
 
             await this.s3Client.send(command);
@@ -82,9 +85,9 @@ export default class AWSBlobStorageService implements IBlobStorageService {
             } else if (err instanceof S3ServiceException && err?.name === 'NoSuchBucket' && forceContainerCreation) {
                 await this.createBucket(containerName);
                 if (fileBuffer) {
-                    return await this.createObject({ containerName, objectName, contentType, fileBuffer, ignoreIfAlreadyExists, forceContainerCreation: false });
+                    return await this.createObject({ containerName, objectName, contentType, fileBuffer, ignoreIfAlreadyExists, overwrite, forceContainerCreation: false });
                 } else if (filePath) {
-                    return await this.createObject({ containerName, objectName, contentType, filePath, ignoreIfAlreadyExists, forceContainerCreation: false });
+                    return await this.createObject({ containerName, objectName, contentType, filePath, ignoreIfAlreadyExists, overwrite, forceContainerCreation: false });
                 }
             }
             throw err;
@@ -163,6 +166,14 @@ export default class AWSBlobStorageService implements IBlobStorageService {
         return { blobName, containerName };
     }
 
+    public generateBlobUrl({ containerName, objectName }: { containerName: string; objectName: string; }) {
+        if (this.blobEndpoint.includes('amazonaws.com')) {
+            const region = this.blobEndpoint.split('.')[1];
+            return `https://${containerName}.s3.${region}.amazonaws.com/${objectName}`;
+        }
+        return `${this.blobEndpoint}/${containerName}/${objectName}`;
+    }
+
     private buildObjectUrl(containerName: string, objectName: string) {
         if (this.blobEndpoint.includes('amazonaws.com')) {
             // Virtual-hosted-style URL (AWS pattern)
@@ -225,6 +236,14 @@ export default class AWSBlobStorageService implements IBlobStorageService {
 
             await this.s3Client.send(deleteCommand);
         }
+    }
+
+    public async deleteObject(containerName: string, objectName: string): Promise<void> {
+        const command = new DeleteObjectCommand({
+            Bucket: containerName,
+            Key: objectName,
+        });
+        await this.s3Client.send(command);
     }
 
 }

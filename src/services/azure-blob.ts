@@ -44,9 +44,22 @@ export default class BlobStorageService implements IBlobStorageService {
      * create object can either receiver a `fileBuffer` or `filePath` to upload a file to azure blob
      * @returns the blobUrl for the created objected
      */
-    public async createObject({ containerName, objectName, fileBuffer, filePath, contentType, ignoreIfAlreadyExists, forceContainerCreation }: CreateObjectParams): Promise<string> {
+    public async createObject({
+        containerName,
+        objectName,
+        fileBuffer,
+        filePath,
+        contentType,
+        ignoreIfAlreadyExists,
+        forceContainerCreation,
+        overwrite
+    }: CreateObjectParams): Promise<string> {
         if (!ignoreIfAlreadyExists) {
             ignoreIfAlreadyExists = false;
+        }
+
+        if (!overwrite) {
+            overwrite = false;
         }
 
         try {
@@ -55,16 +68,20 @@ export default class BlobStorageService implements IBlobStorageService {
             if (fileBuffer) {
                 await blobClient.uploadData(fileBuffer, {
                     blobHTTPHeaders: { blobContentType: contentType },
-                    conditions: {
-                        ifNoneMatch: '*'
-                    }
+                    ...(overwrite ? {} : {
+                        conditions: {
+                            ifNoneMatch: '*',
+                        }
+                    }),
                 });
             } else if (filePath) {
                 await blobClient.uploadFile(filePath, {
                     blobHTTPHeaders: { blobContentType: contentType },
-                    conditions: {
-                        ifNoneMatch: '*'
-                    }
+                    ...(overwrite ? {} : {
+                        conditions: {
+                            ifNoneMatch: '*',
+                        }
+                    }),
                 });
             }
 
@@ -149,6 +166,10 @@ export default class BlobStorageService implements IBlobStorageService {
         };
     }
 
+    public generateBlobUrl({ containerName, objectName }: { containerName: string; objectName: string; }) {
+        return `${this.blobEndpoint}/${containerName}/${objectName}`;
+    }
+
     public async deleteBucket(containerName: string) {
         try {
             const containerClient = this.blobServiceClient.getContainerClient(containerName);
@@ -159,5 +180,11 @@ export default class BlobStorageService implements IBlobStorageService {
             }
             throw err;
         }
+    }
+
+    public async deleteObject(containerName: string, objectName: string) {
+        const containerClient = this.blobServiceClient.getContainerClient(containerName);
+        const blobClient = containerClient.getBlockBlobClient(objectName);
+        await blobClient.deleteIfExists();
     }
 }

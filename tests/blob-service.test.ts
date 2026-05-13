@@ -39,6 +39,7 @@ before(async () => {
 after(async () => {
     await awsService.deleteBucket(AWS_CONTAINER_NAME);
     await awsService.deleteBucket('auto-created-bucket');
+    await awsService.deleteBucket('duplicated-container');
     await azureService.deleteBucket(AZURE_CONTAINER);
 });
 
@@ -59,6 +60,7 @@ describe('BlobService — constructor', () => {
 });
 
 // ─── basic bucket operations ─────────────────────────────────────────────────────────────
+
 describe('aws basic bucket operations', () => {
     it('creates and delete bucket', async () => {
         await awsService.createBucket('random-container');
@@ -241,6 +243,110 @@ describe('BlobService.createObject — Azure (Azurite)', () => {
     });
 });
 
+// ─── createObject overwrite ───────────────────────────────────────────────────
+
+describe('BlobService.createObject overwrite — AWS (s3Ninja)', () => {
+    const objectName = `overwrite-test-${Date.now()}.jpg`;
+
+    before(async () => {
+        await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+    });
+
+    // s3Ninja does not support IfNoneMatch header, so this test is skipped.
+    // TODO: remove skip when s3Ninja adds support for IfNoneMatch (https://github.com/scireum/s3ninja)
+    it.skip('throws DetectionAlreadyExists when object already exists and overwrite is false', async () => {
+        try {
+            await awsService.createObject({
+                containerName: AWS_CONTAINER_NAME,
+                objectName,
+                fileBuffer: imageBuffer,
+                contentType: 'image/jpeg',
+                overwrite: false,
+            });
+            expect.fail('should have thrown');
+        } catch (err) {
+            expect((err as Error).constructor.name).to.equal('DetectionAlreadyExists');
+        }
+    });
+
+    it('overwrites existing object successfully when overwrite is true', async () => {
+        const result = await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+            overwrite: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+
+    it('overwrite with filePath succeeds', async () => {
+        const result = await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            filePath: BLOB_IMAGE_PATH,
+            contentType: 'image/jpeg',
+            overwrite: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+});
+
+describe('BlobService.createObject overwrite — Azure (Azurite)', () => {
+    const objectName = `overwrite-test-${Date.now()}.jpg`;
+
+    before(async () => {
+        await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+    });
+
+    it('throws DetectionAlreadyExists when object already exists and overwrite is false', async () => {
+        try {
+            await azureService.createObject({
+                containerName: AZURE_CONTAINER,
+                objectName,
+                fileBuffer: imageBuffer,
+                contentType: 'image/jpeg',
+                overwrite: false,
+            });
+            expect.fail('should have thrown');
+        } catch (err) {
+            expect((err as Error).constructor.name).to.equal('DetectionAlreadyExists');
+        }
+    });
+
+    it('overwrites existing object successfully when overwrite is true', async () => {
+        const result = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+            overwrite: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+
+    it('overwrite with filePath succeeds', async () => {
+        const result = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            filePath: BLOB_IMAGE_PATH,
+            contentType: 'image/jpeg',
+            overwrite: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+});
+
 // ─── getBlobName ─────────────────────────────────────────────────────────────
 
 describe('BlobService.getBlobName — AWS', () => {
@@ -275,6 +381,62 @@ describe('BlobService.getBlobName — Azure', () => {
     it('throws when URL does not belong to the configured endpoint', () => {
         expect(() => azureService.getBlobName('http://other-account.blob.core.windows.net/container/blob.jpg'))
             .to.throw('is not a valid URL');
+    });
+});
+
+// ─── generateBlobUrl ──────────────────────────────────────────────────────────
+
+describe('BlobService.generateBlobUrl — AWS', () => {
+    it('returns a valid URL for a given containerName and objectName', () => {
+        const result = awsService.generateBlobUrl({
+            containerName: AWS_CONTAINER_NAME,
+            objectName: 'some/nested/file.jpg',
+        });
+        expect(result).to.be.a('string').and.not.empty;
+        expect(result).to.include(AWS_CONTAINER_NAME);
+        expect(result).to.include('some/nested/file.jpg');
+    });
+
+    it('returned URL matches the URL from createObject', async () => {
+        const objectName = `url-match-${Date.now()}.jpg`;
+        const uploadedUrl = await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+        const generatedUrl = awsService.generateBlobUrl({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+        });
+        expect(generatedUrl).to.equal(uploadedUrl);
+    });
+});
+
+describe('BlobService.generateBlobUrl — Azure', () => {
+    it('returns a valid URL for a given containerName and objectName', () => {
+        const result = azureService.generateBlobUrl({
+            containerName: AZURE_CONTAINER,
+            objectName: 'some/nested/file.jpg',
+        });
+        expect(result).to.be.a('string').and.not.empty;
+        expect(result).to.include(AZURE_CONTAINER);
+        expect(result).to.include('some/nested/file.jpg');
+    });
+
+    it('returned URL matches the URL from createObject', async () => {
+        const objectName = `url-match-${Date.now()}.jpg`;
+        const uploadedUrl = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+        const generatedUrl = azureService.generateBlobUrl({
+            containerName: AZURE_CONTAINER,
+            objectName,
+        });
+        expect(generatedUrl).to.equal(uploadedUrl);
     });
 });
 
@@ -364,5 +526,41 @@ describe('BlobService.generateSasTokenForBlob — Azure (Azurite)', () => {
 
         // five minutes default
         expect(moment(sasTokenUrl.searchParams.get('se')).diff(moment(sasTokenUrl.searchParams.get('st')), 'days')).to.be.equal(7);
+    });
+});
+
+// ─── deleteObject ─────────────────────────────────────────────────────────────
+
+describe('BlobService.deleteObject — AWS', () => {
+    it('deletes an existing object successfully', async () => {
+        const objectName = `delete-test-${Date.now()}.jpg`;
+        await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+        await awsService.deleteObject(AWS_CONTAINER_NAME, objectName);
+    });
+
+    it('does not throw when object does not exist', async () => {
+        await awsService.deleteObject(AWS_CONTAINER_NAME, `non-existent-${Date.now()}.jpg`);
+    });
+});
+
+describe('BlobService.deleteObject — Azure', () => {
+    it('deletes an existing object successfully', async () => {
+        const objectName = `delete-test-${Date.now()}.jpg`;
+        await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+        await azureService.deleteObject(AZURE_CONTAINER, objectName);
+    });
+
+    it('does not throw when object does not exist', async () => {
+        await azureService.deleteObject(AZURE_CONTAINER, `non-existent-${Date.now()}.jpg`);
     });
 });

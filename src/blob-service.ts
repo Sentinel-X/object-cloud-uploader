@@ -64,6 +64,16 @@ export default class BlobService {
     }
 
     /**
+     * Generates a direct URL for a stored object without a signed token.
+     * @param params.containerName - Bucket or container where the object is stored.
+     * @param params.objectName - Key/path of the object in storage.
+     * @returns The full URL of the stored object.
+     */
+    public generateBlobUrl(params: { containerName: string; objectName: string; }) {
+        return this.service.generateBlobUrl(params);
+    }
+
+    /**
      * Generates a temporary access token for a stored object.
      * Returns a SAS token for Azure or a pre-signed URL query string for AWS.
      * @param containerName - Bucket or container where the object is stored.
@@ -81,5 +91,15 @@ export default class BlobService {
      */
     public async deleteBucket(containerName: string) {
         await this.service.deleteBucket(containerName);
+    }
+
+    /**
+     * Deletes a single object from storage.
+     * Silently ignores the operation if the object does not exist.
+     * @param containerName - Bucket or container where the object is stored.
+     * @param objectName - Key/path of the object to delete.
+     */
+    public async deleteObject(containerName: string, objectName: string): Promise<void> {
+        await this.service.deleteObject(containerName, objectName);
     }
 }
