@@ -51,6 +51,11 @@ export default class BlobStorageService implements IBlobStorageService {
 
         try {
             const containerClient = this.blobServiceClient.getContainerClient(containerName);
+
+            if (forceContainerCreation) {
+                await containerClient.createIfNotExists();
+            }
+
             const blobClient = containerClient.getBlockBlobClient(objectName);
             if (fileBuffer) {
                 await blobClient.uploadData(fileBuffer, {
@@ -75,13 +80,6 @@ export default class BlobStorageService implements IBlobStorageService {
                     return `${this.blobEndpoint}/${containerName}/${objectName}`;
                 } else {
                     throw new DetectionAlreadyExists('Blob already uploaded.');
-                }
-            } else if (err instanceof RestError && err.code == 'ContainerNotFound' && forceContainerCreation) {
-                await this.createBucket(containerName);
-                if (fileBuffer) {
-                    return await this.createObject({ containerName, objectName, contentType, fileBuffer, ignoreIfAlreadyExists, forceContainerCreation: false });
-                } else if (filePath) {
-                    return await this.createObject({ containerName, objectName, contentType, filePath, ignoreIfAlreadyExists, forceContainerCreation: false });
                 }
             }
             throw err;

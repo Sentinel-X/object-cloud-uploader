@@ -8,7 +8,8 @@ import {
     ListObjectsV2Command,
     DeleteObjectsCommand,
     S3ServiceException,
-    NoSuchBucket
+    NoSuchBucket,
+    HeadBucketCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { readFile } from 'fs/promises';
@@ -59,6 +60,10 @@ export default class AWSBlobStorageService implements IBlobStorageService {
         ignoreIfAlreadyExists = ignoreIfAlreadyExists ?? false;
 
         try {
+            if (forceContainerCreation) {
+                await this.ensureBucketExists(containerName);
+            }
+
             const body = fileBuffer ?? (await readFile(filePath!));
 
             const command = new PutObjectCommand({
@@ -79,15 +84,20 @@ export default class AWSBlobStorageService implements IBlobStorageService {
                 } else {
                     throw new DetectionAlreadyExists('Blob already uploaded.');
                 }
-            } else if (err instanceof S3ServiceException && err?.name === 'NoSuchBucket' && forceContainerCreation) {
-                await this.createBucket(containerName);
-                if (fileBuffer) {
-                    return await this.createObject({ containerName, objectName, contentType, fileBuffer, ignoreIfAlreadyExists, forceContainerCreation: false });
-                } else if (filePath) {
-                    return await this.createObject({ containerName, objectName, contentType, filePath, ignoreIfAlreadyExists, forceContainerCreation: false });
-                }
             }
             throw err;
+        }
+    }
+
+    private async ensureBucketExists(bucketName: string): Promise<void> {
+        try {
+            await this.s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
+        } catch (err) {
+            if (err instanceof S3ServiceException && (err.name === 'NotFound' || err.$metadata.httpStatusCode === 404)) {
+                await this.createBucket(bucketName);
+            } else {
+                throw err;
+            }
         }
     }
 
