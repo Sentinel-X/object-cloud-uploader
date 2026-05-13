@@ -55,9 +55,11 @@ export default class AWSBlobStorageService implements IBlobStorageService {
         filePath,
         contentType,
         ignoreIfAlreadyExists,
-        forceContainerCreation
+        forceContainerCreation,
+        overwrite
     }: CreateObjectParams): Promise<string> {
         ignoreIfAlreadyExists = ignoreIfAlreadyExists ?? false;
+        overwrite = overwrite ?? false;
 
         try {
             if (forceContainerCreation) {
@@ -72,7 +74,7 @@ export default class AWSBlobStorageService implements IBlobStorageService {
                 Body: body,
                 ContentType: contentType,
                 // Same as Azure ifNoneMatch: '*'
-                IfNoneMatch: '*',
+                ...(overwrite ? {} : { IfNoneMatch: '*' }),
             });
 
             await this.s3Client.send(command);

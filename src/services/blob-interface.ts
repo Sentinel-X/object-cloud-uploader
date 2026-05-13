@@ -20,6 +20,11 @@ type CreateObjectParamsBase = {
      * @default false
      */
     forceContainerCreation?: boolean;
+    /**
+     * If `true`, the object will replace another object if already exists
+     * @default false
+     */
+    overwrite?: boolean;
 };
 
 /**

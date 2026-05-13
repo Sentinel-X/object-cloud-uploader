@@ -59,6 +59,7 @@ describe('BlobService — constructor', () => {
 });
 
 // ─── basic bucket operations ─────────────────────────────────────────────────────────────
+
 describe('aws basic bucket operations', () => {
     it('creates and delete bucket', async () => {
         await awsService.createBucket('random-container');
@@ -236,6 +237,110 @@ describe('BlobService.createObject — Azure (Azurite)', () => {
             objectName,
             fileBuffer: imageBuffer,
             ignoreIfAlreadyExists: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+});
+
+// ─── createObject overwrite ───────────────────────────────────────────────────
+
+describe('BlobService.createObject overwrite — AWS (s3Ninja)', () => {
+    const objectName = `overwrite-test-${Date.now()}.jpg`;
+
+    before(async () => {
+        await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+    });
+
+    // s3Ninja does not support IfNoneMatch header, so this test is skipped.
+    // TODO: remove skip when s3Ninja adds support for IfNoneMatch (https://github.com/scireum/s3ninja)
+    it.skip('throws DetectionAlreadyExists when object already exists and overwrite is false', async () => {
+        try {
+            await awsService.createObject({
+                containerName: AWS_CONTAINER_NAME,
+                objectName,
+                fileBuffer: imageBuffer,
+                contentType: 'image/jpeg',
+                overwrite: false,
+            });
+            expect.fail('should have thrown');
+        } catch (err) {
+            expect((err as Error).constructor.name).to.equal('DetectionAlreadyExists');
+        }
+    });
+
+    it('overwrites existing object successfully when overwrite is true', async () => {
+        const result = await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+            overwrite: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+
+    it('overwrite with filePath succeeds', async () => {
+        const result = await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            filePath: BLOB_IMAGE_PATH,
+            contentType: 'image/jpeg',
+            overwrite: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+});
+
+describe('BlobService.createObject overwrite — Azure (Azurite)', () => {
+    const objectName = `overwrite-test-${Date.now()}.jpg`;
+
+    before(async () => {
+        await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+    });
+
+    it('throws DetectionAlreadyExists when object already exists and overwrite is false', async () => {
+        try {
+            await azureService.createObject({
+                containerName: AZURE_CONTAINER,
+                objectName,
+                fileBuffer: imageBuffer,
+                contentType: 'image/jpeg',
+                overwrite: false,
+            });
+            expect.fail('should have thrown');
+        } catch (err) {
+            expect((err as Error).constructor.name).to.equal('DetectionAlreadyExists');
+        }
+    });
+
+    it('overwrites existing object successfully when overwrite is true', async () => {
+        const result = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+            overwrite: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+    });
+
+    it('overwrite with filePath succeeds', async () => {
+        const result = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            filePath: BLOB_IMAGE_PATH,
+            contentType: 'image/jpeg',
+            overwrite: true,
         });
         expect(result).to.be.a('string').and.not.empty;
     });

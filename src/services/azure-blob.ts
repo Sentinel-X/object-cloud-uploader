@@ -44,9 +44,22 @@ export default class BlobStorageService implements IBlobStorageService {
      * create object can either receiver a `fileBuffer` or `filePath` to upload a file to azure blob
      * @returns the blobUrl for the created objected
      */
-    public async createObject({ containerName, objectName, fileBuffer, filePath, contentType, ignoreIfAlreadyExists, forceContainerCreation }: CreateObjectParams): Promise<string> {
+    public async createObject({
+        containerName,
+        objectName,
+        fileBuffer,
+        filePath,
+        contentType,
+        ignoreIfAlreadyExists,
+        forceContainerCreation,
+        overwrite
+    }: CreateObjectParams): Promise<string> {
         if (!ignoreIfAlreadyExists) {
             ignoreIfAlreadyExists = false;
+        }
+
+        if (!overwrite) {
+            overwrite = false;
         }
 
         try {
@@ -60,16 +73,20 @@ export default class BlobStorageService implements IBlobStorageService {
             if (fileBuffer) {
                 await blobClient.uploadData(fileBuffer, {
                     blobHTTPHeaders: { blobContentType: contentType },
-                    conditions: {
-                        ifNoneMatch: '*'
-                    }
+                    ...(overwrite ? {} : {
+                        conditions: {
+                            ifNoneMatch: '*',
+                        }
+                    }),
                 });
             } else if (filePath) {
                 await blobClient.uploadFile(filePath, {
                     blobHTTPHeaders: { blobContentType: contentType },
-                    conditions: {
-                        ifNoneMatch: '*'
-                    }
+                    ...(overwrite ? {} : {
+                        conditions: {
+                            ifNoneMatch: '*',
+                        }
+                    }),
                 });
             }
 
