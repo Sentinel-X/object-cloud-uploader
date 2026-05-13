@@ -8,8 +8,7 @@ import {
     ListObjectsV2Command,
     DeleteObjectsCommand,
     S3ServiceException,
-    NoSuchBucket,
-    HeadBucketCommand
+    NoSuchBucket
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { readFile } from 'fs/promises';
@@ -62,10 +61,6 @@ export default class AWSBlobStorageService implements IBlobStorageService {
         overwrite = overwrite ?? false;
 
         try {
-            if (forceContainerCreation) {
-                await this.ensureBucketExists(containerName);
-            }
-
             const body = fileBuffer ?? (await readFile(filePath!));
 
             const command = new PutObjectCommand({
@@ -86,20 +81,15 @@ export default class AWSBlobStorageService implements IBlobStorageService {
                 } else {
                     throw new DetectionAlreadyExists('Blob already uploaded.');
                 }
+            } else if (err instanceof S3ServiceException && err?.name === 'NoSuchBucket' && forceContainerCreation) {
+                await this.createBucket(containerName);
+                if (fileBuffer) {
+                    return await this.createObject({ containerName, objectName, contentType, fileBuffer, ignoreIfAlreadyExists, overwrite, forceContainerCreation: false });
+                } else if (filePath) {
+                    return await this.createObject({ containerName, objectName, contentType, filePath, ignoreIfAlreadyExists, overwrite, forceContainerCreation: false });
+                }
             }
             throw err;
-        }
-    }
-
-    private async ensureBucketExists(bucketName: string): Promise<void> {
-        try {
-            await this.s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
-        } catch (err) {
-            if (err instanceof S3ServiceException && (err.name === 'NotFound' || err.$metadata.httpStatusCode === 404)) {
-                await this.createBucket(bucketName);
-            } else {
-                throw err;
-            }
         }
     }
 
@@ -173,6 +163,14 @@ export default class AWSBlobStorageService implements IBlobStorageService {
         }
 
         return { blobName, containerName };
+    }
+
+    public generateBlobUrl({ containerName, objectName }: { containerName: string; objectName: string; }) {
+        if (this.blobEndpoint.includes('amazonaws.com')) {
+            const region = this.blobEndpoint.split('.')[1];
+            return `https://${containerName}.s3.${region}.amazonaws.com/${objectName}`;
+        }
+        return `${this.blobEndpoint}/${containerName}/${objectName}`;
     }
 
     private buildObjectUrl(containerName: string, objectName: string) {

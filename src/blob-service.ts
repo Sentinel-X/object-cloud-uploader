@@ -64,6 +64,16 @@ export default class BlobService {
     }
 
     /**
+     * Generates a direct URL for a stored object without a signed token.
+     * @param params.containerName - Bucket or container where the object is stored.
+     * @param params.objectName - Key/path of the object in storage.
+     * @returns The full URL of the stored object.
+     */
+    public generateBlobUrl(params: { containerName: string; objectName: string; }) {
+        return this.service.generateBlobUrl(params);
+    }
+
+    /**
      * Generates a temporary access token for a stored object.
      * Returns a SAS token for Azure or a pre-signed URL query string for AWS.
      * @param containerName - Bucket or container where the object is stored.

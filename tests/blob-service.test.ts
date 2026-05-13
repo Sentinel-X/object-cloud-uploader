@@ -383,6 +383,62 @@ describe('BlobService.getBlobName — Azure', () => {
     });
 });
 
+// ─── generateBlobUrl ──────────────────────────────────────────────────────────
+
+describe('BlobService.generateBlobUrl — AWS', () => {
+    it('returns a valid URL for a given containerName and objectName', () => {
+        const result = awsService.generateBlobUrl({
+            containerName: AWS_CONTAINER_NAME,
+            objectName: 'some/nested/file.jpg',
+        });
+        expect(result).to.be.a('string').and.not.empty;
+        expect(result).to.include(AWS_CONTAINER_NAME);
+        expect(result).to.include('some/nested/file.jpg');
+    });
+
+    it('returned URL matches the URL from createObject', async () => {
+        const objectName = `url-match-${Date.now()}.jpg`;
+        const uploadedUrl = await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+        const generatedUrl = awsService.generateBlobUrl({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+        });
+        expect(generatedUrl).to.equal(uploadedUrl);
+    });
+});
+
+describe('BlobService.generateBlobUrl — Azure', () => {
+    it('returns a valid URL for a given containerName and objectName', () => {
+        const result = azureService.generateBlobUrl({
+            containerName: AZURE_CONTAINER,
+            objectName: 'some/nested/file.jpg',
+        });
+        expect(result).to.be.a('string').and.not.empty;
+        expect(result).to.include(AZURE_CONTAINER);
+        expect(result).to.include('some/nested/file.jpg');
+    });
+
+    it('returned URL matches the URL from createObject', async () => {
+        const objectName = `url-match-${Date.now()}.jpg`;
+        const uploadedUrl = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+        const generatedUrl = azureService.generateBlobUrl({
+            containerName: AZURE_CONTAINER,
+            objectName,
+        });
+        expect(generatedUrl).to.equal(uploadedUrl);
+    });
+});
+
 // ─── generateSasTokenForBlob ──────────────────────────────────────────────────
 
 describe('BlobService.generateSasTokenForBlob — AWS (s3Ninja)', () => {
