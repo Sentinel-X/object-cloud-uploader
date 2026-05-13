@@ -45,4 +45,5 @@ export interface IBlobStorageService {
     getBlobName(blobUrl: string): { blobName: string; containerName: string; };
     generateBlobUrl(params: { containerName: string; objectName: string; }): string;
     deleteBucket(containerName: string): Promise<void>;
+    deleteObject(containerName: string, objectName: string): Promise<void>;
 }

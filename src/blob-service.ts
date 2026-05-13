@@ -92,4 +92,14 @@ export default class BlobService {
     public async deleteBucket(containerName: string) {
         await this.service.deleteBucket(containerName);
     }
+
+    /**
+     * Deletes a single object from storage.
+     * Silently ignores the operation if the object does not exist.
+     * @param containerName - Bucket or container where the object is stored.
+     * @param objectName - Key/path of the object to delete.
+     */
+    public async deleteObject(containerName: string, objectName: string): Promise<void> {
+        await this.service.deleteObject(containerName, objectName);
+    }
 }

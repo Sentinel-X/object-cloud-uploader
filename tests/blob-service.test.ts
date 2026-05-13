@@ -39,6 +39,7 @@ before(async () => {
 after(async () => {
     await awsService.deleteBucket(AWS_CONTAINER_NAME);
     await awsService.deleteBucket('auto-created-bucket');
+    await awsService.deleteBucket('duplicated-container');
     await azureService.deleteBucket(AZURE_CONTAINER);
 });
 
@@ -525,5 +526,41 @@ describe('BlobService.generateSasTokenForBlob — Azure (Azurite)', () => {
 
         // five minutes default
         expect(moment(sasTokenUrl.searchParams.get('se')).diff(moment(sasTokenUrl.searchParams.get('st')), 'days')).to.be.equal(7);
+    });
+});
+
+// ─── deleteObject ─────────────────────────────────────────────────────────────
+
+describe('BlobService.deleteObject — AWS', () => {
+    it('deletes an existing object successfully', async () => {
+        const objectName = `delete-test-${Date.now()}.jpg`;
+        await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+        await awsService.deleteObject(AWS_CONTAINER_NAME, objectName);
+    });
+
+    it('does not throw when object does not exist', async () => {
+        await awsService.deleteObject(AWS_CONTAINER_NAME, `non-existent-${Date.now()}.jpg`);
+    });
+});
+
+describe('BlobService.deleteObject — Azure', () => {
+    it('deletes an existing object successfully', async () => {
+        const objectName = `delete-test-${Date.now()}.jpg`;
+        await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+        await azureService.deleteObject(AZURE_CONTAINER, objectName);
+    });
+
+    it('does not throw when object does not exist', async () => {
+        await azureService.deleteObject(AZURE_CONTAINER, `non-existent-${Date.now()}.jpg`);
     });
 });

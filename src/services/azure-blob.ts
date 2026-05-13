@@ -181,4 +181,10 @@ export default class BlobStorageService implements IBlobStorageService {
             throw err;
         }
     }
+
+    public async deleteObject(containerName: string, objectName: string) {
+        const containerClient = this.blobServiceClient.getContainerClient(containerName);
+        const blobClient = containerClient.getBlockBlobClient(objectName);
+        await blobClient.deleteIfExists();
+    }
 }
