@@ -19,7 +19,7 @@ import { CreateObjectParams, IBlobStorageService } from './blob-interface';
 
 export default class AWSBlobStorageService implements IBlobStorageService {
     private s3Client: S3Client;
-    private blobEndpoint: string;
+    public readonly blobEndpoint: string;
 
     public constructor(config: {
         accessKeyId: string;

@@ -34,6 +34,10 @@ export default class BlobService {
         }
     }
 
+    public getBlobEndpoint() {
+        return this.service.blobEndpoint;
+    }
+
     /**
      * Uploads an object to storage. Accepts either a `fileBuffer` or a `filePath`.
      * @param {CreateObjectParams} params - Parameters for object creation.
