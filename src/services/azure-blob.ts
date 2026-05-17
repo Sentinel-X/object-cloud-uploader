@@ -12,7 +12,7 @@ import { CreateObjectParams, IBlobStorageService } from './blob-interface';
 
 export default class BlobStorageService implements IBlobStorageService {
     private blobServiceClient: BlobServiceClient;
-    private blobEndpoint: string;
+    public readonly blobEndpoint: string;
 
     public constructor(connectionString: string) {
         if (!connectionString) {

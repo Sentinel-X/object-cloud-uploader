@@ -59,6 +59,21 @@ describe('BlobService — constructor', () => {
     });
 });
 
+// ─── get blobEndpoint ─────────────────────────────────────────────────────────────
+describe('aws basic bucket operations', () => {
+    it('get blob endpoint', async () => {
+        const blobEndpoint = awsService.getBlobEndpoint();
+        expect(blobEndpoint).to.be.equal('http://localhost:9444');
+    });
+});
+
+describe('azure basic bucket operations', () => {
+    it('get blob endpoint', async () => {
+        const blobEndpoint = azureService.getBlobEndpoint();
+        expect(blobEndpoint).to.be.equal('http://127.0.0.1:10000/devstoreaccount1');
+    });
+});
+
 // ─── basic bucket operations ─────────────────────────────────────────────────────────────
 
 describe('aws basic bucket operations', () => {

@@ -39,6 +39,7 @@ export type CreateObjectParams =
  * `BlobService` delegates all operations to a concrete implementation of this interface.
  */
 export interface IBlobStorageService {
+    blobEndpoint: string;
     createObject(params: CreateObjectParams): Promise<string>;
     createBucket(containerName: string, isPublic?: boolean): Promise<void>;
     generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration?: number): Promise<string>;
