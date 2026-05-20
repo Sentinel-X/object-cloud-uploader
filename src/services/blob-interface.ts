@@ -35,6 +35,23 @@ export type CreateObjectParams =
     | (CreateObjectParamsBase & { filePath: string; fileBuffer?: never; });
 
 /**
+ * Normalised object properties returned by {@link IBlobStorageService.getObjectProperties}.
+ * Fields are mapped from the provider-specific response (AWS or Azure) to a common camelCase shape.
+ */
+export interface ObjectProperties {
+    /** MIME type of the object (e.g. `'image/jpeg'`). */
+    contentType?: string;
+    /** Size of the object in bytes. */
+    contentLength?: number;
+    /** Date the object was last modified. */
+    lastModified?: Date;
+    /** Entity tag for the object, useful for cache validation and conditional requests. */
+    etag?: string;
+    /** User-defined key/value metadata stored alongside the object. */
+    metadata?: Record<string, string>;
+}
+
+/**
  * Common interface implemented by all blob storage service providers (AWS, Azure, etc.).
  * `BlobService` delegates all operations to a concrete implementation of this interface.
  */
@@ -47,4 +64,5 @@ export interface IBlobStorageService {
     generateBlobUrl(params: { containerName: string; objectName: string; }): string;
     deleteBucket(containerName: string): Promise<void>;
     deleteObject(containerName: string, objectName: string): Promise<void>;
+    getObjectProperties(containerName: string, blobName: string): Promise<ObjectProperties>;
 }

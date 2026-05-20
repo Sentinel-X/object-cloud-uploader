@@ -187,4 +187,18 @@ export default class BlobStorageService implements IBlobStorageService {
         const blobClient = containerClient.getBlockBlobClient(objectName);
         await blobClient.deleteIfExists();
     }
+
+    public async getObjectProperties(containerName: string, objectName: string) {
+        const containerClient = this.blobServiceClient.getContainerClient(containerName);
+        const blobClient = containerClient.getBlockBlobClient(objectName);
+        const response = await blobClient.getProperties();
+
+        return {
+            contentType: response.contentType,
+            contentLength: response.contentLength,
+            lastModified: response.lastModified,
+            etag: response.etag,
+            metadata: response.metadata,
+        };
+    }
 }

@@ -106,4 +106,15 @@ export default class BlobService {
     public async deleteObject(containerName: string, objectName: string): Promise<void> {
         await this.service.deleteObject(containerName, objectName);
     }
+
+    /**
+     * Retrieves metadata and properties of a stored object.
+     * @param containerName - Bucket or container where the object is stored.
+     * @param blobName - Key/path of the object in storage.
+     * @returns Normalised {@link ObjectProperties} with `contentType`, `contentLength`, `lastModified`, `etag` and `metadata`.
+     * @throws If the object does not exist.
+     */
+    public getObjectProperties(containerName: string, blobName: string) {
+        return this.service.getObjectProperties(containerName, blobName);
+    }
 }
