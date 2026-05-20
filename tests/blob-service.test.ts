@@ -579,3 +579,77 @@ describe('BlobService.deleteObject — Azure', () => {
         await azureService.deleteObject(AZURE_CONTAINER, `non-existent-${Date.now()}.jpg`);
     });
 });
+
+// ─── getObjectProperties ──────────────────────────────────────────────────────
+
+describe('BlobService.getObjectProperties — AWS', () => {
+    let objectName: string;
+
+    before(async () => {
+        objectName = `properties-test-${Date.now()}.jpg`;
+        await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+    });
+
+    after(async () => {
+        await awsService.deleteObject(AWS_CONTAINER_NAME, objectName);
+    });
+
+    it('returns properties of an existing object', async () => {
+        const props = await awsService.getObjectProperties(AWS_CONTAINER_NAME, objectName);
+        expect(props).to.exist;
+        expect(props.contentType).to.equal('image/jpeg');
+        expect(props.contentLength).to.be.a('number').and.greaterThan(0);
+        expect(props.lastModified).to.be.instanceOf(Date);
+        expect(props.etag).to.be.a('string').and.not.empty;
+    });
+
+    it('throws when object does not exist', async () => {
+        try {
+            await awsService.getObjectProperties(AWS_CONTAINER_NAME, `non-existent-${Date.now()}.jpg`);
+            expect.fail('should have thrown');
+        } catch (err) {
+            expect((err as Error).constructor.name).to.equal('NotFound');
+        }
+    });
+});
+
+describe('BlobService.getObjectProperties — Azure', () => {
+    let objectName: string;
+
+    before(async () => {
+        objectName = `properties-test-${Date.now()}.jpg`;
+        await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            fileBuffer: imageBuffer,
+            contentType: 'image/jpeg',
+        });
+    });
+
+    after(async () => {
+        await azureService.deleteObject(AZURE_CONTAINER, objectName);
+    });
+
+    it('returns properties of an existing object', async () => {
+        const props = await azureService.getObjectProperties(AZURE_CONTAINER, objectName);
+        expect(props).to.exist;
+        expect(props.contentType).to.equal('image/jpeg');
+        expect(props.contentLength).to.be.a('number').and.greaterThan(0);
+        expect(props.lastModified).to.be.instanceOf(Date);
+        expect(props.etag).to.be.a('string').and.not.empty;
+    });
+
+    it('throws when object does not exist', async () => {
+        try {
+            await azureService.getObjectProperties(AZURE_CONTAINER, `non-existent-${Date.now()}.jpg`);
+            expect.fail('should have thrown');
+        } catch (err) {
+            expect((err as Error).constructor.name).to.equal('RestError');
+        }
+    });
+});
