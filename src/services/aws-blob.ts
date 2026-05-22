@@ -13,10 +13,11 @@ import {
     HeadObjectCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { readFile } from 'fs/promises';
 import moment from 'moment';
 import { DetectionAlreadyExists } from './exceptions';
 import { CreateObjectParams, IBlobStorageService } from './blob-interface';
+import { Upload } from '@aws-sdk/lib-storage';
+import { createReadStream } from 'fs';
 
 export default class AWSBlobStorageService implements IBlobStorageService {
     private s3Client: S3Client;
@@ -38,6 +39,10 @@ export default class AWSBlobStorageService implements IBlobStorageService {
             region,
             credentials: { accessKeyId, secretAccessKey },
             ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
+            requestHandler: {
+                connectionTimeout: 10000,
+                socketTimeout: 300000,
+            },
         });
 
         this.blobEndpoint = endpoint
@@ -49,47 +54,54 @@ export default class AWSBlobStorageService implements IBlobStorageService {
      * create object can either receive a `fileBuffer` or `filePath` to upload a file to S3
      * @returns the blobUrl for the created object
      */
-    public async createObject({
-        containerName,
-        objectName,
-        fileBuffer,
-        filePath,
-        contentType,
-        ignoreIfAlreadyExists,
-        forceContainerCreation,
-        overwrite
-    }: CreateObjectParams): Promise<string> {
-        ignoreIfAlreadyExists = ignoreIfAlreadyExists ?? false;
-        overwrite = overwrite ?? false;
+    public async createObject(params: CreateObjectParams): Promise<string> {
+        const ignoreIfAlreadyExists = params.ignoreIfAlreadyExists ?? false;
+        const overwrite = params.overwrite ?? false;
 
         try {
-            const body = fileBuffer ?? (await readFile(filePath!));
+            if (params.filePath !== undefined) {
+                const stream = createReadStream(params.filePath);
 
-            const command = new PutObjectCommand({
-                Bucket: containerName,
-                Key: objectName,
-                Body: body,
-                ContentType: contentType,
-                // Same as Azure ifNoneMatch: '*'
-                ...(overwrite ? {} : { IfNoneMatch: '*' }),
-            });
+                const upload = new Upload({
+                    client: this.s3Client,
+                    params: {
+                        Bucket: params.containerName,
+                        Key: params.objectName,
+                        Body: stream,
+                        ContentType: params.contentType,
+                        ...(overwrite ? {} : { IfNoneMatch: '*' }),
+                    },
+                    queueSize: 4,
+                    partSize: 8 * 1024 * 1024,
+                    leavePartsOnError: false,
+                });
 
-            await this.s3Client.send(command);
-            return this.buildObjectUrl(containerName, objectName);
+                await upload.done();
+            } else {
+                const body = params.fileBuffer;
+
+                const command = new PutObjectCommand({
+                    Bucket: params.containerName,
+                    Key: params.objectName,
+                    Body: body,
+                    ContentType: params.contentType,
+                    ...(overwrite ? {} : { IfNoneMatch: '*' }),
+                });
+
+                await this.s3Client.send(command);
+            }
+
+            return this.buildObjectUrl(params.containerName, params.objectName);
         } catch (err) {
-            if (err instanceof S3ServiceException && err?.name === 'PreconditionFailed') {
+            if (err instanceof S3ServiceException && err.name === 'PreconditionFailed') {
                 if (ignoreIfAlreadyExists) {
-                    return this.buildObjectUrl(containerName, objectName);
-                } else {
-                    throw new DetectionAlreadyExists('Blob already uploaded.');
+                    return this.buildObjectUrl(params.containerName, params.objectName);
                 }
-            } else if (err instanceof S3ServiceException && err?.name === 'NoSuchBucket' && forceContainerCreation) {
-                await this.createBucket(containerName);
-                if (fileBuffer) {
-                    return await this.createObject({ containerName, objectName, contentType, fileBuffer, ignoreIfAlreadyExists, overwrite, forceContainerCreation: false });
-                } else if (filePath) {
-                    return await this.createObject({ containerName, objectName, contentType, filePath, ignoreIfAlreadyExists, overwrite, forceContainerCreation: false });
-                }
+                throw new DetectionAlreadyExists('Blob already uploaded.');
+            }
+            if (err instanceof S3ServiceException && err.name === 'NoSuchBucket' && params.forceContainerCreation) {
+                await this.createBucket(params.containerName);
+                return await this.createObject(params);
             }
             throw err;
         }
