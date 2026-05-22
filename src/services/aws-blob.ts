@@ -93,7 +93,7 @@ export default class AWSBlobStorageService implements IBlobStorageService {
 
             return this.buildObjectUrl(params.containerName, params.objectName);
         } catch (err) {
-            if (err instanceof S3ServiceException && err?.name === 'PreconditionFailed') {
+            if (err instanceof S3ServiceException && err.name === 'PreconditionFailed') {
                 if (ignoreIfAlreadyExists) {
                     return this.buildObjectUrl(params.containerName, params.objectName);
                 }
