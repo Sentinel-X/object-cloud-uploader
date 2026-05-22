@@ -39,10 +39,10 @@ export default class AWSBlobStorageService implements IBlobStorageService {
             region,
             credentials: { accessKeyId, secretAccessKey },
             ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
-            // requestHandler: {
-            //     connectionTimeout: 10000,
-            //     socketTimeout: 300000,
-            // }
+            requestHandler: {
+                connectionTimeout: 10000,
+                socketTimeout: 300000,
+            },
         });
 
         this.blobEndpoint = endpoint
