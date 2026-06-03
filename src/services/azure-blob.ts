@@ -50,6 +50,7 @@ export default class BlobStorageService implements IBlobStorageService {
         fileBuffer,
         filePath,
         contentType,
+        contentDisposition,
         ignoreIfAlreadyExists,
         forceContainerCreation,
         overwrite
@@ -67,7 +68,10 @@ export default class BlobStorageService implements IBlobStorageService {
             const blobClient = containerClient.getBlockBlobClient(objectName);
             if (fileBuffer) {
                 await blobClient.uploadData(fileBuffer, {
-                    blobHTTPHeaders: { blobContentType: contentType },
+                    blobHTTPHeaders: {
+                        blobContentType: contentType,
+                        blobContentDisposition: contentDisposition
+                    },
                     ...(overwrite ? {} : {
                         conditions: {
                             ifNoneMatch: '*',
@@ -76,7 +80,10 @@ export default class BlobStorageService implements IBlobStorageService {
                 });
             } else if (filePath) {
                 await blobClient.uploadFile(filePath, {
-                    blobHTTPHeaders: { blobContentType: contentType },
+                    blobHTTPHeaders: {
+                        blobContentType: contentType,
+                        blobContentDisposition: contentDisposition
+                    },
                     ...(overwrite ? {} : {
                         conditions: {
                             ifNoneMatch: '*',

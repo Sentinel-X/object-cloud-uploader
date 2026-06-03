@@ -69,6 +69,7 @@ export default class AWSBlobStorageService implements IBlobStorageService {
                         Key: params.objectName,
                         Body: stream,
                         ContentType: params.contentType,
+                        ContentDisposition: params.contentDisposition,
                         ...(overwrite ? {} : { IfNoneMatch: '*' }),
                     },
                     queueSize: 4,
@@ -85,6 +86,7 @@ export default class AWSBlobStorageService implements IBlobStorageService {
                     Key: params.objectName,
                     Body: body,
                     ContentType: params.contentType,
+                    ContentDisposition: params.contentDisposition,
                     ...(overwrite ? {} : { IfNoneMatch: '*' }),
                 });
 
