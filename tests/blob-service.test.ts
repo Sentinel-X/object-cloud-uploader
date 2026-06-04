@@ -117,23 +117,41 @@ describe('BlobService.createObject — AWS (s3Ninja)', () => {
     });
 
     it('uploads fileBuffer successfully and returns a URL', async () => {
+        const contentDisposition = 'attachment; filename="myTestFile.jpg"';
+        const objectName = `test-upload-${Date.now()}.jpg`;
+
         const result = await awsService.createObject({
             containerName: AWS_CONTAINER_NAME,
-            objectName: `test-upload-${Date.now()}.jpg`,
+            objectName: objectName,
             fileBuffer: imageBuffer,
             contentType: 'image/jpeg',
+            contentDisposition
         });
         expect(result).to.be.a('string').and.not.empty;
+
+        // TODO: uncomment the code below when s3Ninja adds support for contentDisposition (https://github.com/scireum/s3ninja)
+        // const token = await awsService.generateSasTokenForBlob(AWS_CONTAINER_NAME, objectName);
+        // const response = await fetch(`${result}?${token}`);
+        // expect(response.headers.get('content-disposition')).to.equal(contentDisposition);
     });
 
     it('uploads filePath successfully and returns a URL', async () => {
+        const contentDisposition = 'attachment; filename="myTestFile.jpg"';
+        const objectName = `test-upload-${Date.now()}.jpg`;
+
         const result = await awsService.createObject({
             containerName: AWS_CONTAINER_NAME,
-            objectName: `test-upload-${Date.now()}.jpg`,
+            objectName: objectName,
             filePath: BLOB_IMAGE_PATH,
             contentType: 'image/jpeg',
+            contentDisposition
         });
         expect(result).to.be.a('string').and.not.empty;
+
+        // TODO: uncomment the code below when s3Ninja adds support for contentDisposition (https://github.com/scireum/s3ninja)
+        // const token = await awsService.generateSasTokenForBlob(AWS_CONTAINER_NAME, objectName);
+        // const response = await fetch(`${result}?${token}`);;
+        // expect(response.headers.get('content-disposition')).to.equal(contentDisposition);
     });
 
     it('creates bucket automatically and uploads if bucket does not exist', async () => {
@@ -171,23 +189,39 @@ describe('BlobService.createObject — Azure (Azurite)', () => {
     });
 
     it('uploads fileBuffer successfully and returns a URL', async () => {
+        const contentDisposition = 'attachment; filename="myTestFile.jpg"';
+        const objectName = `test-upload-${Date.now()}.jpg`;
+
         const result = await azureService.createObject({
             containerName: AZURE_CONTAINER,
-            objectName: `test-upload-${Date.now()}.jpg`,
+            objectName: objectName,
             fileBuffer: imageBuffer,
             contentType: 'image/jpeg',
+            contentDisposition
         });
         expect(result).to.be.a('string').and.not.empty;
+
+        const token = await azureService.generateSasTokenForBlob(AZURE_CONTAINER, objectName);
+        const response = await fetch(`${result}?${token}`);
+        expect(response.headers.get('content-disposition')).to.equal(contentDisposition);
     });
 
     it('uploads filePath successfully and returns a URL', async () => {
+        const contentDisposition = 'attachment; filename="myTestFile.jpg"';
+        const objectName = `test-upload-${Date.now()}.jpg`;
+
         const result = await azureService.createObject({
             containerName: AZURE_CONTAINER,
-            objectName: `test-upload-${Date.now()}.jpg`,
+            objectName: objectName,
             filePath: BLOB_IMAGE_PATH,
             contentType: 'image/jpeg',
+            contentDisposition,
         });
         expect(result).to.be.a('string').and.not.empty;
+
+        const token = await azureService.generateSasTokenForBlob(AZURE_CONTAINER, objectName);
+        const response = await fetch(`${result}?${token}`);
+        expect(response.headers.get('content-disposition')).to.equal(contentDisposition);
     });
 
     it('creates container automatically and uploads if container does not exist using file buffer', async () => {

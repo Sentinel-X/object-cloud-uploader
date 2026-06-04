@@ -9,6 +9,11 @@ type CreateObjectParamsBase = {
     /** MIME type of the file (e.g. `'image/jpeg'`). */
     contentType?: string;
     /**
+     * Force download with a custom filename
+     * contentDisposition: 'attachment; filename="desired-file-name.pdf"'
+     */
+    contentDisposition?: string;
+    /**
      * If `true`, silently returns the existing object URL instead of throwing
      * `DetectionAlreadyExists` when the object already exists.
      * @default false
