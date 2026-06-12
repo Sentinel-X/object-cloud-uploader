@@ -36,8 +36,17 @@ type CreateObjectParamsBase = {
  * Parameters for `createObject`. Provide either `fileBuffer` or `filePath` — not both.
  */
 export type CreateObjectParams =
-    | (CreateObjectParamsBase & { fileBuffer: Buffer; filePath?: never; })
-    | (CreateObjectParamsBase & { filePath: string; fileBuffer?: never; });
+    | (CreateObjectParamsBase & { filePath?: never; fileBuffer: Buffer; copyFromUrl?: never; maxMemoryUse?: never; })
+    | (CreateObjectParamsBase & { filePath: string; fileBuffer?: never; copyFromUrl?: never; maxMemoryUse?: never; })
+    | (CreateObjectParamsBase & {
+        filePath?: never;
+        fileBuffer?: never;
+        copyFromUrl: string;
+        /**
+         * maximum file content length (in MB) to save on memory. If bigger a file will be written on tmp folder of disk.
+         */
+        maxMemoryUse?: number;
+    });
 
 /**
  * Normalised object properties returned by {@link IBlobStorageService.getObjectProperties}.

@@ -9,6 +9,10 @@ import {
 import moment from 'moment';
 import { DetectionAlreadyExists } from './exceptions';
 import { CreateObjectParams, IBlobStorageService } from './blob-interface';
+import { randomUUID } from 'crypto';
+import { pipeline } from 'stream/promises';
+import { createWriteStream } from 'fs';
+import { unlink } from 'fs/promises';
 
 export default class BlobStorageService implements IBlobStorageService {
     private blobServiceClient: BlobServiceClient;
@@ -49,11 +53,13 @@ export default class BlobStorageService implements IBlobStorageService {
         objectName,
         fileBuffer,
         filePath,
+        copyFromUrl,
         contentType,
         contentDisposition,
         ignoreIfAlreadyExists,
         forceContainerCreation,
-        overwrite
+        overwrite,
+        maxMemoryUse,
     }: CreateObjectParams): Promise<string> {
         if (!ignoreIfAlreadyExists) {
             ignoreIfAlreadyExists = false;
@@ -66,7 +72,7 @@ export default class BlobStorageService implements IBlobStorageService {
         try {
             const containerClient = this.blobServiceClient.getContainerClient(containerName);
             const blobClient = containerClient.getBlockBlobClient(objectName);
-            if (fileBuffer) {
+            if (fileBuffer !== undefined) {
                 await blobClient.uploadData(fileBuffer, {
                     blobHTTPHeaders: {
                         blobContentType: contentType,
@@ -78,7 +84,7 @@ export default class BlobStorageService implements IBlobStorageService {
                         }
                     }),
                 });
-            } else if (filePath) {
+            } else if (filePath !== undefined) {
                 await blobClient.uploadFile(filePath, {
                     blobHTTPHeaders: {
                         blobContentType: contentType,
@@ -90,6 +96,55 @@ export default class BlobStorageService implements IBlobStorageService {
                         }
                     }),
                 });
+            } else if (copyFromUrl !== undefined) {
+                maxMemoryUse = (maxMemoryUse ?? 8) * 1024 * 1024;
+                const response = await fetch(copyFromUrl);
+                const size = Number(response.headers.get('content-length') ?? 0);
+                const originalContentDisposition = response.headers.get('content-disposition');
+                const originalContentType = response.headers.get('content-type');
+
+                contentType = contentType ?? originalContentType ?? undefined;
+                contentDisposition = contentDisposition ?? originalContentDisposition ?? undefined;
+
+                if (size > maxMemoryUse) {
+                    const tempFile = `/tmp/${randomUUID()}`;
+                    await pipeline(
+                        response.body!,
+                        createWriteStream(tempFile),
+                    );
+
+                    await blobClient.uploadFile(tempFile, {
+                        blobHTTPHeaders: {
+                            blobContentType: contentType,
+                            blobContentDisposition: contentDisposition
+                        },
+                        ...(overwrite ? {} : {
+                            conditions: {
+                                ifNoneMatch: '*',
+                            }
+                        }),
+                    });
+
+                    await unlink(tempFile);
+
+                } else {
+                    const buffer = Buffer.from(
+                        await response.arrayBuffer(),
+                    );
+
+                    await blobClient.uploadData(buffer, {
+                        blobHTTPHeaders: {
+                            blobContentType: contentType,
+                            blobContentDisposition: contentDisposition
+                        },
+                        ...(overwrite ? {} : {
+                            conditions: {
+                                ifNoneMatch: '*',
+                            }
+                        }),
+                    });
+                }
+
             }
 
             return `${this.blobEndpoint}/${containerName}/${objectName}`;
