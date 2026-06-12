@@ -181,6 +181,18 @@ describe('BlobService.createObject — AWS (s3Ninja)', () => {
         });
         expect(result).to.be.a('string').and.not.empty;
     });
+
+    xit('creates an object copying from url', async () => {
+        const objectName = `copied-from-url-${Date.now()}.jpg`;
+        const result = await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            copyFromUrl: 'https://blob.orion.petacloud.com.br:6443/sentinelx-stage-stream-server-videos/b172169b-3f01-44f3-9ff6-4a1f91272da5/1781258610710_1781258734599.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=S28EyP3ZObcjhqWZ4cjZ%2F20260612%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260612T195110Z&X-Amz-Expires=300&X-Amz-Signature=ae00f696ee576e6a268a1c998b4da896716f1cef960fd52ca775f08f77474d43&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
+        });
+        expect(result).to.be.a('string').and.not.empty;
+
+        // https://wallpapercat.com/w/full/0/f/3/5815630-3840x2160-desktop-hd-4k-wallpaper-image.jpg
+    });
 });
 
 describe('BlobService.createObject — Azure (Azurite)', () => {
@@ -289,6 +301,20 @@ describe('BlobService.createObject — Azure (Azurite)', () => {
             ignoreIfAlreadyExists: true,
         });
         expect(result).to.be.a('string').and.not.empty;
+    });
+
+    xit('creates an object copying from url', async () => {
+        const objectName = `copied-from-url-${Date.now()}.jpg`;
+        const result = await azureService.createObject({
+            containerName: AZURE_CONTAINER,
+            objectName,
+            copyFromUrl: 'https://blob.orion.petacloud.com.br:6443/sentinelx-stage-stream-server-videos/b172169b-3f01-44f3-9ff6-4a1f91272da5/1781272001064_1781272124952.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=S28EyP3ZObcjhqWZ4cjZ/20260612/us-east-1/s3/aws4_request&X-Amz-Date=20260612T200319Z&X-Amz-Expires=300&X-Amz-Signature=cbea8931455a9bb51eaf977ee82850dec619edf5db3bffacd89a14a5e19d1af8&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
+            // copyFromUrl: 'https://wallpapercat.com/w/full/0/f/3/5815630-3840x2160-desktop-hd-4k-wallpaper-image.jpg',
+            maxMemoryUse: 1,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+
+        // https://wallpapercat.com/w/full/0/f/3/5815630-3840x2160-desktop-hd-4k-wallpaper-image.jpg
     });
 });
 

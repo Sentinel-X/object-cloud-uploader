@@ -11,14 +11,16 @@ import {
     NoSuchBucket,
     DeleteObjectCommand,
     HeadObjectCommand,
-    CopyObjectCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import moment from 'moment';
 import { DetectionAlreadyExists } from './exceptions';
 import { CreateObjectParams, IBlobStorageService } from './blob-interface';
 import { Upload } from '@aws-sdk/lib-storage';
-import { createReadStream } from 'fs';
+import { createReadStream, createWriteStream } from 'fs';
+import { unlink } from 'fs/promises';
+import { randomUUID } from 'crypto';
+import { pipeline } from 'stream/promises';
 
 export default class AWSBlobStorageService implements IBlobStorageService {
     private s3Client: S3Client;
@@ -80,13 +82,59 @@ export default class AWSBlobStorageService implements IBlobStorageService {
 
                 await upload.done();
             } else if (params.copyFromUrl !== undefined) {
-                await this.s3Client.send(
-                    new CopyObjectCommand({
+                params.maxMemoryUse = (params.maxMemoryUse ?? 8) * 1024 * 1024;
+                const response = await fetch(params.copyFromUrl);
+                const size = Number(response.headers.get('content-length') ?? 0);
+                const originalContentDisposition = response.headers.get('content-disposition');
+                const originalContentType = response.headers.get('content-type');
+
+                params.contentType = params.contentType ?? originalContentType ?? undefined;
+                params.contentDisposition = params.contentDisposition ?? originalContentDisposition ?? undefined;
+
+                if (size > params.maxMemoryUse) {
+                    const tempFile = `/tmp/${randomUUID()}`;
+                    await pipeline(
+                        response.body!,
+                        createWriteStream(tempFile),
+                    );
+
+                    const stream = createReadStream(tempFile);
+
+                    const upload = new Upload({
+                        client: this.s3Client,
+                        params: {
+                            Bucket: params.containerName,
+                            Key: params.objectName,
+                            Body: stream,
+                            ContentType: params.contentType,
+                            ContentDisposition: params.contentDisposition,
+                            ...(overwrite ? {} : { IfNoneMatch: '*' }),
+                        },
+                        queueSize: 1,
+                        partSize: params.maxMemoryUse,
+                        leavePartsOnError: false,
+                    });
+
+                    await upload.done();
+                    await unlink(tempFile);
+
+                } else {
+                    const buffer = Buffer.from(
+                        await response.arrayBuffer(),
+                    );
+
+                    const command = new PutObjectCommand({
                         Bucket: params.containerName,
                         Key: params.objectName,
-                        CopySource: params.copyFromUrl,
-                    })
-                );
+                        Body: buffer,
+                        ContentType: params.contentType,
+                        ContentDisposition: params.contentDisposition,
+                        ...(overwrite ? {} : { IfNoneMatch: '*' }),
+                    });
+
+                    await this.s3Client.send(command);
+                }
+
             } else {
                 const body = params.fileBuffer;
 
