@@ -36,8 +36,9 @@ type CreateObjectParamsBase = {
  * Parameters for `createObject`. Provide either `fileBuffer` or `filePath` — not both.
  */
 export type CreateObjectParams =
-    | (CreateObjectParamsBase & { fileBuffer: Buffer; filePath?: never; })
-    | (CreateObjectParamsBase & { filePath: string; fileBuffer?: never; });
+    | (CreateObjectParamsBase & { filePath?: never; fileBuffer: Buffer; copyFromUrl?: never; })
+    | (CreateObjectParamsBase & { filePath: string; fileBuffer?: never; copyFromUrl?: never; })
+    | (CreateObjectParamsBase & { filePath?: never; fileBuffer?: never; copyFromUrl: string; });
 
 /**
  * Normalised object properties returned by {@link IBlobStorageService.getObjectProperties}.

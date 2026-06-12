@@ -10,7 +10,8 @@ import {
     S3ServiceException,
     NoSuchBucket,
     DeleteObjectCommand,
-    HeadObjectCommand
+    HeadObjectCommand,
+    CopyObjectCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import moment from 'moment';
@@ -78,6 +79,14 @@ export default class AWSBlobStorageService implements IBlobStorageService {
                 });
 
                 await upload.done();
+            } else if (params.copyFromUrl !== undefined) {
+                await this.s3Client.send(
+                    new CopyObjectCommand({
+                        Bucket: params.containerName,
+                        Key: params.objectName,
+                        CopySource: params.copyFromUrl,
+                    })
+                );
             } else {
                 const body = params.fileBuffer;
 

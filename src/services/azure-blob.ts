@@ -1,6 +1,7 @@
 import {
     BlobServiceClient,
     ContainerSASPermissions,
+    Metadata,
     RestError,
     SASProtocol,
     StorageSharedKeyCredential,
@@ -49,6 +50,7 @@ export default class BlobStorageService implements IBlobStorageService {
         objectName,
         fileBuffer,
         filePath,
+        copyFromUrl,
         contentType,
         contentDisposition,
         ignoreIfAlreadyExists,
@@ -66,7 +68,7 @@ export default class BlobStorageService implements IBlobStorageService {
         try {
             const containerClient = this.blobServiceClient.getContainerClient(containerName);
             const blobClient = containerClient.getBlockBlobClient(objectName);
-            if (fileBuffer) {
+            if (fileBuffer !== undefined) {
                 await blobClient.uploadData(fileBuffer, {
                     blobHTTPHeaders: {
                         blobContentType: contentType,
@@ -78,12 +80,32 @@ export default class BlobStorageService implements IBlobStorageService {
                         }
                     }),
                 });
-            } else if (filePath) {
+            } else if (filePath !== undefined) {
                 await blobClient.uploadFile(filePath, {
                     blobHTTPHeaders: {
                         blobContentType: contentType,
                         blobContentDisposition: contentDisposition
                     },
+                    ...(overwrite ? {} : {
+                        conditions: {
+                            ifNoneMatch: '*',
+                        }
+                    }),
+                });
+            } else if (copyFromUrl !== undefined) {
+
+                const metadata: Metadata = {};
+
+                if (contentType) {
+                    metadata.contentType = contentType;
+                }
+
+                if (contentDisposition) {
+                    metadata.contentDisposition = contentDisposition;
+                }
+
+                await blobClient.syncCopyFromURL(copyFromUrl, {
+                    metadata,
                     ...(overwrite ? {} : {
                         conditions: {
                             ifNoneMatch: '*',
