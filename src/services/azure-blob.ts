@@ -7,7 +7,7 @@ import {
     generateBlobSASQueryParameters
 } from '@azure/storage-blob';
 import moment from 'moment';
-import { DetectionAlreadyExists } from './exceptions';
+import { DetectionAlreadyExists, InvalidStatusCode } from './exceptions';
 import { CreateObjectParams, IBlobStorageService } from './blob-interface';
 import { randomUUID } from 'crypto';
 import { pipeline } from 'stream/promises';
@@ -99,6 +99,9 @@ export default class BlobStorageService implements IBlobStorageService {
             } else if (copyFromUrl !== undefined) {
                 maxMemoryUse = (maxMemoryUse ?? 8) * 1024 * 1024;
                 const response = await fetch(copyFromUrl);
+                if (response.status < 200 || response.status >= 300) {
+                    throw new InvalidStatusCode(`${copyFromUrl} - returned status code: ${response.status}`);
+                }
                 const size = Number(response.headers.get('content-length') ?? 0);
                 const originalContentDisposition = response.headers.get('content-disposition');
                 const originalContentType = response.headers.get('content-type');
