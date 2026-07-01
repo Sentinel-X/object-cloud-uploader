@@ -3,7 +3,7 @@ import path from 'path';
 import { readFile } from 'fs/promises';
 import moment from 'moment';
 import BlobService, { BlobConfig } from '../src/blob-service';
-import { InvalidCloudType } from '../src/services/exceptions';
+import { InvalidCloudType, InvalidStatusCode } from '../src/services/exceptions';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -316,6 +316,22 @@ describe('BlobService.createObject — Azure (Azurite)', () => {
 
         // https://wallpapercat.com/w/full/0/f/3/5815630-3840x2160-desktop-hd-4k-wallpaper-image.jpg
     });
+
+    it('Failed to create a new object', async () => {
+        try {
+            const objectName = `copied-from-url-${Date.now()}.jpg`;
+            await azureService.createObject({
+                containerName: AZURE_CONTAINER,
+                objectName,
+                copyFromUrl: 'https://httpbin.org/status/403',
+                maxMemoryUse: 1,
+            });
+        } catch (error) {
+            expect(error).to.be.instanceOf(InvalidStatusCode);
+            expect((error as Error).message).to.contain('403');
+        }
+    });
+
 });
 
 // ─── createObject overwrite ───────────────────────────────────────────────────
