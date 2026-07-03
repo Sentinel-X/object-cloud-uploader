@@ -304,11 +304,25 @@ describe('BlobService.createObject — Azure (Azurite)', () => {
     });
 
     it('creates an object copying from url', async () => {
+        const awsResult = await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName: `test-to-copy-${Date.now()}.jpg`,
+            filePath: BLOB_IMAGE_PATH,
+            contentType: 'image/jpeg',
+            contentDisposition: 'attachment; filename="myTestFile.jpg"'
+        });
+        expect(awsResult).to.be.a('string').and.not.empty;
+
+        const { containerName, blobName } = awsService.getBlobName(awsResult);
+        const token = await awsService.generateSasTokenForBlob(containerName, blobName);
+        expect(token).to.exist;
+        expect(token).to.be.a('string').and.not.empty;
+
         const objectName = `copied-from-url-${Date.now()}.jpg`;
         const result = await azureService.createObject({
             containerName: AZURE_CONTAINER,
             objectName,
-            copyFromUrl: 'https://wallpapercat.com/w/full/0/f/3/5815630-3840x2160-desktop-hd-4k-wallpaper-image.jpg',
+            copyFromUrl: `${awsResult}?${token}`,
             maxMemoryUse: 1,
         });
         expect(result).to.be.a('string').and.not.empty;
@@ -316,11 +330,20 @@ describe('BlobService.createObject — Azure (Azurite)', () => {
 
     it('Failed to copying from url', async () => {
         try {
+            const result = await awsService.createObject({
+                containerName: AWS_CONTAINER_NAME,
+                objectName: `test-to-copy-${Date.now()}.jpg`,
+                filePath: BLOB_IMAGE_PATH,
+                contentType: 'image/jpeg',
+                contentDisposition: 'attachment; filename="myTestFile.jpg"'
+            });
+            expect(result).to.be.a('string').and.not.empty;
+
             const objectName = `copied-from-url-${Date.now()}.jpg`;
             await azureService.createObject({
                 containerName: AZURE_CONTAINER,
                 objectName,
-                copyFromUrl: 'https://httpbin.org/status/403',
+                copyFromUrl: result,
                 maxMemoryUse: 1,
             });
         } catch (error) {
