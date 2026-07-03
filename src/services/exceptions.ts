@@ -12,3 +12,4 @@ class ExtendableError extends Error {
 
 export class DetectionAlreadyExists extends ExtendableError { }
 export class InvalidCloudType extends ExtendableError { }
+export class InvalidStatusCode extends ExtendableError { }
