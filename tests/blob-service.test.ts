@@ -8,6 +8,7 @@ import { InvalidCloudType, InvalidStatusCode } from '../src/services/exceptions'
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 const BLOB_IMAGE_PATH = path.join(__dirname, 'assets', 'blob_image.jpg');
+const ANOTHER_BLOB_IMAGE_PATH = path.join(__dirname, 'assets', 'another_blob_image.jpg');
 
 const AWS_CONFIG: BlobConfig = {
     blobStorageType: 'aws',
@@ -27,11 +28,13 @@ const AZURE_CONFIG: BlobConfig = {
 const AZURE_CONTAINER = moment().format('YYYY-MM-DD');
 
 let imageBuffer: Buffer<ArrayBufferLike>;
+let anotherImageBuffer: Buffer<ArrayBufferLike>;
 let awsService: BlobService;
 let azureService: BlobService;
 
 before(async () => {
     imageBuffer = await readFile(BLOB_IMAGE_PATH);
+    anotherImageBuffer = await readFile(ANOTHER_BLOB_IMAGE_PATH);
     awsService = new BlobService(AWS_CONFIG);
     azureService = new BlobService(AZURE_CONFIG);
 });
@@ -386,7 +389,7 @@ describe('BlobService.createObject overwrite — AWS (s3Ninja)', () => {
     });
 
     it('overwrites existing object successfully when overwrite is true', async () => {
-        const result = await awsService.createObject({
+        let result = await awsService.createObject({
             containerName: AWS_CONTAINER_NAME,
             objectName,
             fileBuffer: imageBuffer,
@@ -394,6 +397,23 @@ describe('BlobService.createObject overwrite — AWS (s3Ninja)', () => {
             overwrite: true,
         });
         expect(result).to.be.a('string').and.not.empty;
+
+        let props = await awsService.getObjectProperties(AWS_CONTAINER_NAME, objectName);
+        expect(props).to.exist;
+        expect(props.contentLength).to.be.a('number').and.eq(373636);
+
+        result = await awsService.createObject({
+            containerName: AWS_CONTAINER_NAME,
+            objectName,
+            fileBuffer: anotherImageBuffer,
+            contentType: 'image/jpeg',
+            overwrite: true,
+        });
+        expect(result).to.be.a('string').and.not.empty;
+
+        props = await awsService.getObjectProperties(AWS_CONTAINER_NAME, objectName);
+        expect(props).to.exist;
+        expect(props.contentLength).to.be.a('number').and.eq(3322458);
     });
 
     it('overwrite with filePath succeeds', async () => {
