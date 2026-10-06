@@ -193,7 +193,7 @@ export default class BlobStorageService implements IBlobStorageService {
         }
     }
 
-    public async generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()) {
+    public async generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds(), ipAddress?: string) {
         const containerClient = this.blobServiceClient.getContainerClient(containerName);
         const startsOn = new Date();
 
@@ -201,6 +201,14 @@ export default class BlobStorageService implements IBlobStorageService {
 
         if (new URL(this.blobEndpoint).protocol === 'http:') {
             protocol = SASProtocol.HttpsAndHttp;
+        }
+
+        let ipRange;
+        if (ipAddress) {
+            ipRange = {
+                start: ipAddress,
+                end: ipAddress,
+            };
         }
 
         const sasToken = generateBlobSASQueryParameters({
@@ -211,6 +219,7 @@ export default class BlobStorageService implements IBlobStorageService {
             expiresOn: new Date(startsOn.getTime() + millisecondsDuration),
             version: '2024-11-04',
             protocol,
+            ipRange
         }, containerClient.credential as StorageSharedKeyCredential);
 
         return String(sasToken);

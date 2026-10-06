@@ -73,7 +73,7 @@ export interface IBlobStorageService {
     blobEndpoint: string;
     createObject(params: CreateObjectParams): Promise<string>;
     createBucket(containerName: string, isPublic?: boolean): Promise<void>;
-    generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration?: number): Promise<string>;
+    generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration?: number, ipAddress?: string): Promise<string>;
     getBlobName(blobUrl: string): { blobName: string; containerName: string; };
     generateBlobUrl(params: { containerName: string; objectName: string; }): string;
     deleteBucket(containerName: string): Promise<void>;

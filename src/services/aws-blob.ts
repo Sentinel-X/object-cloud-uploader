@@ -204,7 +204,8 @@ export default class AWSBlobStorageService implements IBlobStorageService {
         }
     }
 
-    public async generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds()) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public async generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration = moment.duration(5, 'minutes').asMilliseconds(), ipAddress?: string) {
         const command = new GetObjectCommand({
             Bucket: containerName,
             Key: blobName,
