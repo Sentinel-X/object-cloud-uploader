@@ -83,7 +83,7 @@ export default class BlobService {
      * @param containerName - Bucket or container where the object is stored.
      * @param blobName - Key/path of the object in storage.
      * @param millisecondsDuration - Token validity in milliseconds. Defaults to 5 minutes.
-     * @param ipAddress - Specifies an IP address or a range of IP addresses from which to accept requests.
+     * @param ipAddress - Specifies an IP address from which to accept requests.
      */
     public generateSasTokenForBlob(containerName: string, blobName: string, millisecondsDuration?: number, ipAddress?: string) {
         return this.service.generateSasTokenForBlob(containerName, blobName, millisecondsDuration, ipAddress);

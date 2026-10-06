@@ -204,12 +204,10 @@ export default class BlobStorageService implements IBlobStorageService {
         }
 
         let ipRange;
-
         if (ipAddress) {
-            const [start, end] = ipAddress.split('-').map(ip => ip.trim());
             ipRange = {
-                start,
-                end: end ?? start,
+                start: ipAddress,
+                end: ipAddress,
             };
         }
 
